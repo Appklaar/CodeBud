@@ -1,0 +1,1 @@
+export const validateApiKey = (key: string) => /^[a-z0-9]{16}$/.test(key);

@@ -1,0 +1,172 @@
+import { 
+  Instruction, 
+  InstructionsTable,
+  RemoteEvent,
+  OnEventUsersCustomCallback,
+  ConnectionInfoPacket,
+  EventLog,
+  RemoteScenario,
+  ScenarioLog
+} from './types';
+import { CONFIG } from './config';
+import { EventHandleError, ScenarioHandleError } from './Errors';
+import { SOCKET_EVENTS_LISTEN, SOCKET_EVENTS_EMIT } from './api/api';
+import { SPECIAL_INSTRUCTIONS_TABLE, SPECIAL_INSTRUCTIONS } from './constants/events';
+import { io, Socket } from "socket.io-client";
+import { delay } from './helperFunctions';
+import moment from 'moment';
+
+export class Connector {
+  private static _currentInstanceId = 0;
+  private _apiKey: string;
+  private _instructionsTable: InstructionsTable = {};
+  private _onEventUsersCustomCallback: OnEventUsersCustomCallback;
+  private _connectionInfoPacket: ConnectionInfoPacket;
+  private _socket: Socket;
+
+  public readonly instanceId: number;
+  
+  private _fillInstructionsTable(instructions: Instruction[]) {
+    const table: InstructionsTable = {};
+
+    instructions.forEach((ins: Instruction) => {
+      table[ins.id] = ins;
+    });
+
+    this._instructionsTable = table;
+  }
+
+  private _getInstructionsPublicFields(instructions: Instruction[]) {
+    const instructionsPublic = instructions.map((el: Instruction) => {
+      const publicData = (({ handler, ...o }) => o)(el); // remove "handler" field
+      return publicData;
+    });
+
+    return instructionsPublic;
+  }
+
+  private async _innerHandleEvent(event: RemoteEvent, isPartOfScenario: boolean = false) {
+    console.log('On event:', event);
+
+    try {
+      const correspondingInstructionsTable = event.eventType === "default" ? this._instructionsTable: SPECIAL_INSTRUCTIONS_TABLE;
+
+      if (!correspondingInstructionsTable[event.instructionId])
+        throw new EventHandleError(event, `No instruction with id ${event.instructionId} found.`);
+
+      event.args = event.args ?? [];
+
+      const startTimestamp = moment().valueOf();
+      this._onEventUsersCustomCallback(event);
+
+      if (event.args.length !== correspondingInstructionsTable[event.instructionId].handler.length)
+        throw new EventHandleError(event, `Instruction handler takes ${correspondingInstructionsTable[event.instructionId].handler.length} args, but ${event.args.length} were passed.`);
+
+      this._socket.emit(SOCKET_EVENTS_EMIT.EXECUTING_EVENT, event.id);
+
+      const result = await correspondingInstructionsTable[event.instructionId].handler(...event.args);
+      const endTimestamp = moment().valueOf();
+      const eventLog: EventLog = {
+        event,
+        ok: true,
+        result,
+        startTimestamp,
+        endTimestamp,
+        elapsedTime: endTimestamp - startTimestamp
+      };
+     
+      this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_EVENT_LOG, eventLog);
+    } catch (error) {
+      console.log(`Error while trying to handle event.`, error);
+
+      // If current event was part of scenario then throw error so it would be processed inside _innerHandleScenario's catch block
+      if (isPartOfScenario)
+        throw error;
+      
+      this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_EVENT_LOG, {event, ok: false, error});
+    }
+  }
+
+  private async _innerHandleScenario(scenario: RemoteScenario) {
+    console.log('On scenario:', scenario);
+
+    var eventIndex = 0;
+
+    try {
+      this._socket.emit(SOCKET_EVENTS_EMIT.EXECUTING_SCENARIO, scenario.id);
+
+      const startTimestamp = moment().valueOf();
+      for (const event of scenario.events) {
+        await this._innerHandleEvent(event, true);
+        eventIndex++;
+      }
+      const endTimestamp = moment().valueOf();
+
+      const scenarioLog: ScenarioLog = {
+        scenario,
+        ok: true,
+        startTimestamp,
+        endTimestamp,
+        elapsedTime: endTimestamp - startTimestamp
+      };
+      this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_SCENARIO_LOG, scenarioLog);
+    } catch (error) {
+      console.log(`Error while trying to handle scenario.`, error);
+      const scenarioError = new ScenarioHandleError(scenario, scenario.events[eventIndex], "Scenario execution failed.");
+      this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_SCENARIO_LOG, {scenario, ok: false, error: scenarioError});
+    }
+  }
+ 
+  constructor(apiKey: string, instructions: Instruction[], usersCustomCallback: OnEventUsersCustomCallback) {
+    this.instanceId = Connector._currentInstanceId++;
+
+    this._apiKey = apiKey;
+    this._fillInstructionsTable(instructions);
+    this._onEventUsersCustomCallback = usersCustomCallback;
+    this._connectionInfoPacket = {
+      apiKey,
+      clientType: "CLIENT",
+      availableInstructions: this._getInstructionsPublicFields(instructions),
+      specialInstructions: this._getInstructionsPublicFields(SPECIAL_INSTRUCTIONS)
+    };
+
+    this._socket = io(CONFIG.MAIN_URL, {
+      withCredentials: true,
+      path: CONFIG.SOCKET_PATH, 
+      transports: ['websocket'],
+      query: {apiKey: this._apiKey}
+    });
+
+    this._socket.on(SOCKET_EVENTS_LISTEN.CONNECT, () => {
+      console.log('Socket connected:', this._socket.connected);
+      this._socket.emit(SOCKET_EVENTS_EMIT.SET_CONNECTION_INFO, this._connectionInfoPacket);
+    });
+
+    this._socket.on(SOCKET_EVENTS_LISTEN.EVENT, (event: RemoteEvent) => this._innerHandleEvent(event));
+
+    this._socket.on(SOCKET_EVENTS_LISTEN.SCENARIO, (scenario: RemoteScenario) => this._innerHandleScenario(scenario));
+
+    this._socket.on(SOCKET_EVENTS_LISTEN.CONNECT_ERROR, (err) => {
+      console.warn(`Socket connect_error: ${err.message}`);
+    });
+
+    this._socket.on(SOCKET_EVENTS_LISTEN.ERROR, (error) => {
+      console.log('Socket send error:', error);
+    });
+
+    this._socket.on(SOCKET_EVENTS_LISTEN.DISCONNECT, async () => {
+      console.log('Socket disconnected.');
+      setTimeout(() => {
+        this._socket.connect();
+      }, CONFIG.SOCKET_RECONNECTION_DELAY);
+    });
+  }
+
+  // Метод для "чистки" процессов нашего Sdk
+  public disconnect() {
+    this._socket.disconnect();
+    this._apiKey = "";
+    this._instructionsTable = {};
+    this._onEventUsersCustomCallback = () => {};
+  }
+}
