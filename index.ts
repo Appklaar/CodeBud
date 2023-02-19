@@ -40,7 +40,7 @@ type SdkModule = {
   disconnect: () => void;
 };
 
-export const Sdk: SdkModule = {
+export const AppKlaarSdk: SdkModule = {
   _apiKey : null,
   _connector: null,
   _currentState: "NOT_INITIATED",
