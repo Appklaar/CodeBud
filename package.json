@@ -1,7 +1,7 @@
 {
-  "name": "appklaar_sdk",
-  "version": "0.0.1",
-  "private": true,
+  "name": "@appklaar/appklaar_sdk",
+  "version": "1.0.0",
+  "private": false,
   "description": "App Klaar remote testing SDK",
   "main": "index.ts",
   "scripts": {
@@ -30,5 +30,14 @@
   "resolutions": {
     "**/@typescript-eslint/eslint-plugin": "5.27.1",
     "**/@typescript-eslint/parser": "5.27.1"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Appklaar/AppKlaarSDK.git"
+  },
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Appklaar/AppKlaarSDK/issues"
+  },
+  "homepage": "https://github.com/Appklaar/AppKlaarSDK#readme"
 }
