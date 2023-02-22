@@ -2,7 +2,7 @@ import { SpecialInstructionsTable, SpecialInstructionId, Instruction } from './.
 import { delay as customDelay } from '../helperFunctions';
 
 export const EXISTING_SPECIAL_INSTRUCTION_IDS: Set<SpecialInstructionId> = new Set([
-  "delay"
+  "delay", "forwardData"
 ]);
 
 export const SPECIAL_INSTRUCTIONS_TABLE: SpecialInstructionsTable = {
@@ -15,6 +15,14 @@ export const SPECIAL_INSTRUCTIONS_TABLE: SpecialInstructionsTable = {
     handler: async (data: {delayInMs: number}) => {
       await customDelay(data.delayInMs);
     }
+  },
+  forwardData: {
+    id: "forwardData",
+    description: "Forwards chosen fields from previous event result to next event params. Takes 1 param - array of params to forward",
+    parametersDescription: {
+      paramsToForward: "array"
+    },
+    handler: (data: any) => {}
   }
 };
 

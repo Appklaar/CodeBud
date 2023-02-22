@@ -13,7 +13,6 @@ import { EventHandleError, ScenarioHandleError } from './Errors';
 import { SOCKET_EVENTS_LISTEN, SOCKET_EVENTS_EMIT } from './api/api';
 import { SPECIAL_INSTRUCTIONS_TABLE, SPECIAL_INSTRUCTIONS } from './constants/events';
 import { io, Socket } from "socket.io-client";
-import { delay } from './helperFunctions';
 import moment from 'moment';
 
 export class Connector {
@@ -22,6 +21,8 @@ export class Connector {
   private _instructionsTable: InstructionsTable = {};
   private _onEventUsersCustomCallback: OnEventUsersCustomCallback;
   private _connectionInfoPacket: ConnectionInfoPacket;
+  private _lastEventLog: undefined | EventLog;
+  private _dataToForward: null | {[key: string]: any} = null;
   private _socket: Socket;
 
   public readonly instanceId: number;
@@ -50,13 +51,20 @@ export class Connector {
 
     try {
       const correspondingInstructionsTable = event.eventType === "default" ? this._instructionsTable: SPECIAL_INSTRUCTIONS_TABLE;
-
       if (!correspondingInstructionsTable[event.instructionId])
         throw new EventHandleError(event, `No instruction with id ${event.instructionId} found.`);
 
       event.args = event.args ?? [];
 
       const startTimestamp = moment().valueOf();
+      if (this._dataToForward && event.args[0]) {
+        Object.keys(this._dataToForward).forEach((key) => {
+          // @ts-ignore
+          event.args[0][key] = this._dataToForward[key];
+        });
+        this._dataToForward = null;
+      }
+
       this._onEventUsersCustomCallback(event);
 
       if (event.args.length !== correspondingInstructionsTable[event.instructionId].handler.length)
@@ -65,6 +73,14 @@ export class Connector {
       this._socket.emit(SOCKET_EVENTS_EMIT.EXECUTING_EVENT, event.id);
 
       const result = await correspondingInstructionsTable[event.instructionId].handler(...event.args);
+      if (event.instructionId === "forwardData" && this._lastEventLog?.result) {
+        const dataToForward: {[key: string]: any} = {};
+        for (const key of event.args[0].paramsToForward)
+          dataToForward[key] = this._lastEventLog.result[key];
+
+        this._dataToForward = dataToForward;
+      }
+
       const endTimestamp = moment().valueOf();
       const eventLog: EventLog = {
         event,
@@ -76,6 +92,8 @@ export class Connector {
       };
      
       this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_EVENT_LOG, eventLog);
+
+      return eventLog;
     } catch (error) {
       console.log(`Error while trying to handle event.`, error);
 
@@ -91,13 +109,16 @@ export class Connector {
     console.log('On scenario:', scenario);
 
     var eventIndex = 0;
+    this._lastEventLog = undefined;
+    this._dataToForward = null;
 
     try {
       this._socket.emit(SOCKET_EVENTS_EMIT.EXECUTING_SCENARIO, scenario.id);
 
       const startTimestamp = moment().valueOf();
       for (const event of scenario.events) {
-        await this._innerHandleEvent(event, true);
+        const eventLog = await this._innerHandleEvent(event, true);
+        this._lastEventLog = eventLog;
         eventIndex++;
       }
       const endTimestamp = moment().valueOf();

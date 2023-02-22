@@ -1,9 +1,12 @@
 import { EventHandleError, ScenarioHandleError } from "./Errors";
 
+type InstructionPrototype = "login" | "logout";
+
 type ParamType = "number" | "string" | "object" | "array";
 
 type InstructionPublicFields = {
   id: string;
+  prototype?: InstructionPrototype;
   parametersDescription?: {[key: string]: ParamType};
   description?: string;
 }
@@ -14,7 +17,7 @@ export type Instruction = InstructionPublicFields & {
 
 export type InstructionsTable = {[key: string]: Instruction};
 
-export type SpecialInstructionId = "delay";
+export type SpecialInstructionId = "delay" | "forwardData";
 
 export type SpecialInstructionsTable = {[id in SpecialInstructionId]: Instruction};
 
