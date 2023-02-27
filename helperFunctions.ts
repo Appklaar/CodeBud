@@ -5,3 +5,12 @@ export function delay(ms: number) {
 export const isValidApiKey = (apiKey: string) => {
   return true;
 };
+
+export const stringifyIfNotString = (data: any) => {
+  if (typeof data === "string") {
+    data = data.replace(/'/g, `"`).replace(/\s/g, "");
+    return data;
+  }
+
+  return JSON.stringify(data);
+}

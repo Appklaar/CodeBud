@@ -2,10 +2,19 @@ import { SpecialInstructionsTable, SpecialInstructionId, Instruction } from './.
 import { delay as customDelay } from '../helperFunctions';
 
 export const EXISTING_SPECIAL_INSTRUCTION_IDS: Set<SpecialInstructionId> = new Set([
-  "delay", "forwardData"
+  "condition", "delay", "forwardData"
 ]);
 
 export const SPECIAL_INSTRUCTIONS_TABLE: SpecialInstructionsTable = {
+  condition: {
+    id: "condition",
+    description: "Condition statement. Next event will be executed only if previous event result matches condition.",
+    parametersDescription: {
+      param: "string",
+      equalsTo: "string"
+    },
+    handler: (data: any) => {}
+  },
   delay: {
     id: "delay",
     description: "Adds delay between events. Has 1 parameter - delay in ms",

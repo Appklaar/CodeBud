@@ -17,7 +17,7 @@ export type Instruction = InstructionPublicFields & {
 
 export type InstructionsTable = {[key: string]: Instruction};
 
-export type SpecialInstructionId = "delay" | "forwardData";
+export type SpecialInstructionId = "condition" | "delay" | "forwardData";
 
 export type SpecialInstructionsTable = {[id in SpecialInstructionId]: Instruction};
 
@@ -62,3 +62,5 @@ export type ScenarioLog = {
   endTimestamp?: number;
   elapsedTime?: number;
 };
+
+export type EventListenersTable = {[key: string]: (event: RemoteEvent) => any};

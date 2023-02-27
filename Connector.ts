@@ -6,17 +6,20 @@ import {
   ConnectionInfoPacket,
   EventLog,
   RemoteScenario,
-  ScenarioLog
+  ScenarioLog,
+  EventListenersTable
 } from './types';
 import { CONFIG } from './config';
 import { EventHandleError, ScenarioHandleError } from './Errors';
 import { SOCKET_EVENTS_LISTEN, SOCKET_EVENTS_EMIT } from './api/api';
 import { SPECIAL_INSTRUCTIONS_TABLE, SPECIAL_INSTRUCTIONS } from './constants/events';
 import { io, Socket } from "socket.io-client";
+import { stringifyIfNotString } from './helperFunctions';
 import moment from 'moment';
 
 export class Connector {
   private static _currentInstanceId = 0;
+  private static _eventListenersTable: EventListenersTable = {};
   private _apiKey: string;
   private _instructionsTable: InstructionsTable = {};
   private _onEventUsersCustomCallback: OnEventUsersCustomCallback;
@@ -25,7 +28,16 @@ export class Connector {
   private _dataToForward: null | {[key: string]: any} = null;
   private _socket: Socket;
 
+  public static lastEvent: RemoteEvent | null = null;
   public readonly instanceId: number;
+
+  public static addEventListener(key: string, handler: (event: RemoteEvent) => any) {
+    Connector._eventListenersTable[key] = handler;
+  };
+
+  public static removeEventListener(key: string) {
+    delete Connector._eventListenersTable[key];
+  };
   
   private _fillInstructionsTable(instructions: Instruction[]) {
     const table: InstructionsTable = {};
@@ -46,6 +58,14 @@ export class Connector {
     return instructionsPublic;
   }
 
+  private serveAllExternalListeners(event: RemoteEvent) {
+    Connector.lastEvent = event;
+    this._onEventUsersCustomCallback(event);
+
+    for (const key of Object.keys(Connector._eventListenersTable))
+      Connector._eventListenersTable[key](event);
+  };
+
   private async _innerHandleEvent(event: RemoteEvent, isPartOfScenario: boolean = false) {
     console.log('On event:', event);
 
@@ -65,15 +85,23 @@ export class Connector {
         this._dataToForward = null;
       }
 
-      this._onEventUsersCustomCallback(event);
+      this.serveAllExternalListeners(event);
 
       if (event.args.length !== correspondingInstructionsTable[event.instructionId].handler.length)
         throw new EventHandleError(event, `Instruction handler takes ${correspondingInstructionsTable[event.instructionId].handler.length} args, but ${event.args.length} were passed.`);
 
       this._socket.emit(SOCKET_EVENTS_EMIT.EXECUTING_EVENT, event.id);
 
-      const result = await correspondingInstructionsTable[event.instructionId].handler(...event.args);
-      if (event.instructionId === "forwardData" && this._lastEventLog?.result) {
+      let result = await correspondingInstructionsTable[event.instructionId].handler(...event.args);
+
+      if (event.instructionId === "condition" && this._lastEventLog?.result) {
+        const { param, equalsTo } = event.args[0];
+
+        if (stringifyIfNotString(this._lastEventLog.result[param]) != stringifyIfNotString(equalsTo))
+          result = {conditionEvaluatedTo: 0, shouldSkipNextEvent: 1};
+        else
+          result = {conditionEvaluatedTo: 1, shouldSkipNextEvent: 0};
+      } else if (event.instructionId === "forwardData" && this._lastEventLog?.result) {
         const dataToForward: {[key: string]: any} = {};
         for (const key of event.args[0].paramsToForward)
           dataToForward[key] = this._lastEventLog.result[key];
@@ -117,8 +145,10 @@ export class Connector {
 
       const startTimestamp = moment().valueOf();
       for (const event of scenario.events) {
-        const eventLog = await this._innerHandleEvent(event, true);
-        this._lastEventLog = eventLog;
+        if (!this._lastEventLog?.result?.shouldSkipNextEvent) {
+          const eventLog = await this._innerHandleEvent(event, true);
+          this._lastEventLog = eventLog;
+        }
         eventIndex++;
       }
       const endTimestamp = moment().valueOf();
@@ -151,7 +181,7 @@ export class Connector {
       specialInstructions: this._getInstructionsPublicFields(SPECIAL_INSTRUCTIONS)
     };
 
-    this._socket = io(CONFIG.MAIN_URL, {
+    this._socket = io(CONFIG.MAIN_SOCKET_ADDRESS, {
       withCredentials: true,
       path: CONFIG.SOCKET_PATH, 
       transports: ['websocket'],
