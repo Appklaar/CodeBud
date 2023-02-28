@@ -27,6 +27,7 @@ export class Connector {
   private _lastEventLog: undefined | EventLog;
   private _dataToForward: null | {[key: string]: any} = null;
   private _socket: Socket;
+  private _currentReduxStateCopy: any = null;
 
   public static lastEvent: RemoteEvent | null = null;
   public readonly instanceId: number;
@@ -213,11 +214,34 @@ export class Connector {
     });
   }
 
+  public createReduxStoreChangeHandler(store: any, selectFn: (state: any) => any): () => void {
+    try {
+      return () => {
+        const previousReduxStateCopyStr = JSON.stringify(this._currentReduxStateCopy);
+        this._currentReduxStateCopy = selectFn(store.getState());
+
+        if (previousReduxStateCopyStr !== JSON.stringify(this._currentReduxStateCopy && this._socket.connected)) {
+          console.log('new REDUX state', this._currentReduxStateCopy);
+          this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_REDUX_STATE_COPY, {state: this._currentReduxStateCopy});
+        }
+      }
+    } catch (e) {
+      console.warn(`Error while trying to create ReduxStoreChangeHandler`, e);
+      return () => {};
+    }
+  }
+
   // Метод для "чистки" процессов нашего Sdk
   public disconnect() {
     this._socket.disconnect();
     this._apiKey = "";
     this._instructionsTable = {};
     this._onEventUsersCustomCallback = () => {};
+    this._lastEventLog = undefined;
+    this._dataToForward = null;
+    
+    // Think about it later
+    Connector._eventListenersTable = {};
+    Connector.lastEvent = null;
   }
 }

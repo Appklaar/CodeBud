@@ -13,4 +13,5 @@ export const SOCKET_EVENTS_EMIT = {
   SAVE_EVENT_LOG: "saveEventLog",
   EXECUTING_SCENARIO: "executingScenario",
   SAVE_SCENARIO_LOG: "saveScenarioLog",
+  SAVE_REDUX_STATE_COPY: "saveReduxStateCopy"
 };
