@@ -1,6 +1,6 @@
 {
   "name": "@appklaar/appklaar_sdk",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "private": false,
   "description": "App Klaar remote testing SDK",
   "main": "index.ts",
