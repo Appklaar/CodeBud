@@ -220,8 +220,7 @@ export class Connector {
         const previousReduxStateCopyStr = JSON.stringify(this._currentReduxStateCopy);
         this._currentReduxStateCopy = selectFn(store.getState());
 
-        if (previousReduxStateCopyStr !== JSON.stringify(this._currentReduxStateCopy && this._socket.connected)) {
-          console.log('new REDUX state', this._currentReduxStateCopy);
+        if (previousReduxStateCopyStr !== JSON.stringify(this._currentReduxStateCopy) && this._socket.connected) {
           this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_REDUX_STATE_COPY, {state: this._currentReduxStateCopy});
         }
       }
