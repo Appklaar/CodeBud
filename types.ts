@@ -64,3 +64,5 @@ export type ScenarioLog = {
 };
 
 export type EventListenersTable = {[key: string]: (event: RemoteEvent) => any};
+
+export type SelectFn = (state: any) => any;

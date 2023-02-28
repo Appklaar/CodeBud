@@ -1,6 +1,6 @@
 import { Connector } from './Connector';
 import { isValidApiKey } from './helperFunctions';
-import { Instruction, OnEventUsersCustomCallback } from './types';
+import { Instruction, OnEventUsersCustomCallback, SelectFn } from './types';
 import { MODULE_STATES, ModuleState } from './States';
 import { EXISTING_SPECIAL_INSTRUCTION_IDS } from './constants/events';
 import { validateApiKey } from './constants/regex';
@@ -34,6 +34,13 @@ type SdkModule = {
 	 * @returns {string} Description of current module state.
 	 */
   state: string;
+  /**
+	 * Function that creates Redux Store Change Handler, that you can use to subscribe to Store Changes.
+   * @param {any} store Your store.
+   * @param {SelectFn} selectFn select function that returns part of the store.
+   * @returns {Function} Store change handler function.
+	 */
+  createReduxStoreChangeHandler: (store: any, selectFn: (state: any) => any) => (() => void),
   /**
 	 * Close the connection.
 	 */
@@ -117,6 +124,10 @@ export const AppKlaarSdk: SdkModule = {
 
   get state(): string {
     return `Current state is ${this._currentState}. ${MODULE_STATES[this._currentState]}`;
+  },
+
+  createReduxStoreChangeHandler(store, selectFn) {
+    return this._connector.createReduxStoreChangeHandler(store, selectFn);
   },
 
   disconnect() {
