@@ -1,6 +1,5 @@
 import { Connector } from './Connector';
-import { isValidApiKey } from './helperFunctions';
-import { Instruction, OnEventUsersCustomCallback, SelectFn } from './types';
+import { Instruction, OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettings, SelectFn } from './types';
 import { MODULE_STATES, ModuleState } from './States';
 import { EXISTING_SPECIAL_INSTRUCTION_IDS } from './constants/events';
 import { validateApiKey } from './constants/regex';
@@ -35,12 +34,21 @@ type SdkModule = {
 	 */
   state: string;
   /**
+	 * @returns {RemoteSettings | null} Last fetched remote settings object.
+	 */
+  remoteSettings: RemoteSettings | null;
+  /**
+	 * Function for refreshing remote settings.
+   * @param {RefreshRemoteSettingsCallback} callbackFn Function that will be called if request succeeded.
+	 */
+  refreshRemoteSettings: (callbackFn?: RefreshRemoteSettingsCallback) => void;
+  /**
 	 * Function that creates Redux Store Change Handler, that you can use to subscribe to Store Changes.
    * @param {any} store Your store.
    * @param {SelectFn} selectFn select function that returns part of the store.
    * @returns {Function} Store change handler function.
 	 */
-  createReduxStoreChangeHandler: (store: any, selectFn: (state: any) => any) => (() => void),
+  createReduxStoreChangeHandler: (store: any, selectFn: (state: any) => any) => (() => void);
   /**
 	 * Close the connection.
 	 */
@@ -126,8 +134,30 @@ export const AppKlaarSdk: SdkModule = {
     return `Current state is ${this._currentState}. ${MODULE_STATES[this._currentState]}`;
   },
 
+  get remoteSettings(): RemoteSettings | null {
+    if (this._connector)
+      return this._connector.remoteSettings;
+
+    return null;
+  },
+
+  async refreshRemoteSettings(callbackFn?: RefreshRemoteSettingsCallback) {
+    if (this._connector)
+      this._connector.refreshRemoteSettings(callbackFn);
+    else 
+      console.warn("Sdk not initiated.");
+  },
+
   createReduxStoreChangeHandler(store, selectFn) {
-    return this._connector.createReduxStoreChangeHandler(store, selectFn);
+    try {
+      if (!this._connector)
+        throw new Error('Something went wrong while creating ReduxStoreChangeHandler. Double check that you initialized sdk');
+
+      return this._connector.createReduxStoreChangeHandler(store, selectFn);
+    } catch (e) {
+      console.warn(e);
+      return () => {};
+    }
   },
 
   disconnect() {

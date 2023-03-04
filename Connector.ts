@@ -7,11 +7,13 @@ import {
   EventLog,
   RemoteScenario,
   ScenarioLog,
-  EventListenersTable
+  EventListenersTable,
+  RemoteSettings,
+  RefreshRemoteSettingsCallback
 } from './types';
 import { CONFIG } from './config';
 import { EventHandleError, ScenarioHandleError } from './Errors';
-import { SOCKET_EVENTS_LISTEN, SOCKET_EVENTS_EMIT } from './api/api';
+import { api, SOCKET_EVENTS_LISTEN, SOCKET_EVENTS_EMIT } from './api/api';
 import { SPECIAL_INSTRUCTIONS_TABLE, SPECIAL_INSTRUCTIONS } from './constants/events';
 import { io, Socket } from "socket.io-client";
 import { stringifyIfNotString } from './helperFunctions';
@@ -28,6 +30,7 @@ export class Connector {
   private _dataToForward: null | {[key: string]: any} = null;
   private _socket: Socket;
   private _currentReduxStateCopy: any = null;
+  private _remoteSettings: RemoteSettings | null = null;
 
   public static lastEvent: RemoteEvent | null = null;
   public readonly instanceId: number;
@@ -168,6 +171,24 @@ export class Connector {
       this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_SCENARIO_LOG, {scenario, ok: false, error: scenarioError});
     }
   }
+
+  public async refreshRemoteSettings(callbackFn?: RefreshRemoteSettingsCallback) {
+    try {
+      const remoteSettings = await api.getRemoteSettingsGet(this._apiKey)
+      .then((response) => {
+        if (response.ok && response.data) {
+          return response.data?.remoteSettings
+        } else {
+          throw new Error("Response returned an error");
+        }
+      });
+
+      this._remoteSettings = remoteSettings;
+      callbackFn && callbackFn(remoteSettings);
+    } catch (e) {
+      console.warn("Error while trying to fetch remote settings", e);
+    }
+  }
  
   constructor(apiKey: string, instructions: Instruction[], usersCustomCallback: OnEventUsersCustomCallback) {
     this.instanceId = Connector._currentInstanceId++;
@@ -188,6 +209,8 @@ export class Connector {
       transports: ['websocket'],
       query: {apiKey: this._apiKey}
     });
+
+    this.refreshRemoteSettings();
 
     this._socket.on(SOCKET_EVENTS_LISTEN.CONNECT, () => {
       console.log('Socket connected:', this._socket.connected);
@@ -230,7 +253,11 @@ export class Connector {
     }
   }
 
-  // Метод для "чистки" процессов нашего Sdk
+  public get remoteSettings(): RemoteSettings | null {
+    return this._remoteSettings;
+  }
+
+  // Метод для "чистки" данных нашего SDK
   public disconnect() {
     this._socket.disconnect();
     this._apiKey = "";
@@ -238,6 +265,9 @@ export class Connector {
     this._onEventUsersCustomCallback = () => {};
     this._lastEventLog = undefined;
     this._dataToForward = null;
+
+    this._currentReduxStateCopy = null;
+    this._remoteSettings = null;
     
     // Think about it later
     Connector._eventListenersTable = {};

@@ -2,10 +2,6 @@ export function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export const isValidApiKey = (apiKey: string) => {
-  return true;
-};
-
 export const stringifyIfNotString = (data: any) => {
   if (typeof data === "string") {
     data = data.replace(/'/g, `"`).replace(/\s/g, "");

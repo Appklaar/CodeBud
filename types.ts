@@ -1,5 +1,10 @@
 import { EventHandleError, ScenarioHandleError } from "./Errors";
 
+export type ErrorResponse = {
+  message?: string;
+  invalidParameters?: string[];
+};
+
 type InstructionPrototype = "login" | "logout";
 
 type ParamType = "number" | "string" | "object" | "array";
@@ -66,3 +71,13 @@ export type ScenarioLog = {
 export type EventListenersTable = {[key: string]: (event: RemoteEvent) => any};
 
 export type SelectFn = (state: any) => any;
+
+export type ObjectT<T> = {[key: string]: T};
+
+export type RemoteSettings = ObjectT<string>;
+
+export type GetRemoteSettingsResponse = {
+  remoteSettings: RemoteSettings 
+} & ErrorResponse;
+
+export type RefreshRemoteSettingsCallback = (r: RemoteSettings) => void;

@@ -4,6 +4,7 @@ const DEV_MODE: DevMode = "PRODUCTION";
 
 const CONFIG_INNER = {
   MAIN_URL: "https://unitap.online",
+  BASE_URL: 'https://unitap.online/api',
   DEV: {
     "PRODUCTION": false,
     "DEVELOPMENT": true
