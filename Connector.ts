@@ -9,7 +9,8 @@ import {
   ScenarioLog,
   EventListenersTable,
   RemoteSettings,
-  RefreshRemoteSettingsCallback
+  RefreshRemoteSettingsCallback,
+  RemoteSettingsListenersTable
 } from './types';
 import { CONFIG } from './config';
 import { EventHandleError, ScenarioHandleError } from './Errors';
@@ -21,7 +22,9 @@ import moment from 'moment';
 
 export class Connector {
   private static _currentInstanceId = 0;
+  private static _remoteSettings: RemoteSettings | null = null;
   private static _eventListenersTable: EventListenersTable = {};
+  private static _remoteSettingsListenersTable: RemoteSettingsListenersTable = {};
   private _apiKey: string;
   private _instructionsTable: InstructionsTable = {};
   private _onEventUsersCustomCallback: OnEventUsersCustomCallback;
@@ -30,7 +33,6 @@ export class Connector {
   private _dataToForward: null | {[key: string]: any} = null;
   private _socket: Socket;
   private _currentReduxStateCopy: any = null;
-  private _remoteSettings: RemoteSettings | null = null;
 
   public static lastEvent: RemoteEvent | null = null;
   public readonly instanceId: number;
@@ -41,6 +43,14 @@ export class Connector {
 
   public static removeEventListener(key: string) {
     delete Connector._eventListenersTable[key];
+  };
+
+  public static addRemoteSettingsListener(key: string, handler: (r: RemoteSettings) => any) {
+    Connector._remoteSettingsListenersTable[key] = handler;
+  };
+
+  public static removeRemoteSettingsListener(key: string) {
+    delete Connector._remoteSettingsListenersTable[key];
   };
   
   private _fillInstructionsTable(instructions: Instruction[]) {
@@ -62,7 +72,7 @@ export class Connector {
     return instructionsPublic;
   }
 
-  private serveAllExternalListeners(event: RemoteEvent) {
+  private serveAllExternalListenersWithNewEvent(event: RemoteEvent) {
     Connector.lastEvent = event;
     this._onEventUsersCustomCallback(event);
 
@@ -89,7 +99,7 @@ export class Connector {
         this._dataToForward = null;
       }
 
-      this.serveAllExternalListeners(event);
+      this.serveAllExternalListenersWithNewEvent(event);
 
       if (event.args.length !== correspondingInstructionsTable[event.instructionId].handler.length)
         throw new EventHandleError(event, `Instruction handler takes ${correspondingInstructionsTable[event.instructionId].handler.length} args, but ${event.args.length} were passed.`);
@@ -183,7 +193,7 @@ export class Connector {
         }
       });
 
-      this._remoteSettings = remoteSettings;
+      Connector._remoteSettings = remoteSettings;
       callbackFn && callbackFn(remoteSettings);
     } catch (e) {
       console.warn("Error while trying to fetch remote settings", e);
@@ -221,6 +231,12 @@ export class Connector {
 
     this._socket.on(SOCKET_EVENTS_LISTEN.SCENARIO, (scenario: RemoteScenario) => this._innerHandleScenario(scenario));
 
+    this._socket.on(SOCKET_EVENTS_LISTEN.SAVE_NEW_REMOTE_SETTINGS, (r: RemoteSettings) => {
+      Connector._remoteSettings = r;
+      for (const key of Object.keys(Connector._remoteSettingsListenersTable))
+        Connector._remoteSettingsListenersTable[key](r);
+    });
+
     this._socket.on(SOCKET_EVENTS_LISTEN.CONNECT_ERROR, (err) => {
       console.warn(`Socket connect_error: ${err.message}`);
     });
@@ -253,8 +269,8 @@ export class Connector {
     }
   }
 
-  public get remoteSettings(): RemoteSettings | null {
-    return this._remoteSettings;
+  public static get remoteSettings(): RemoteSettings | null {
+    return Connector._remoteSettings;
   }
 
   // Метод для "чистки" данных нашего SDK
@@ -265,12 +281,12 @@ export class Connector {
     this._onEventUsersCustomCallback = () => {};
     this._lastEventLog = undefined;
     this._dataToForward = null;
-
     this._currentReduxStateCopy = null;
-    this._remoteSettings = null;
     
     // Think about it later
-    Connector._eventListenersTable = {};
     Connector.lastEvent = null;
+    Connector._remoteSettings = null;
+    Connector._eventListenersTable = {};
+    Connector._remoteSettingsListenersTable = {};
   }
 }

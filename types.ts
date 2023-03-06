@@ -68,13 +68,17 @@ export type ScenarioLog = {
   elapsedTime?: number;
 };
 
-export type EventListenersTable = {[key: string]: (event: RemoteEvent) => any};
+export type ListenersTable<T> = {[key: string]: (data: T) => any};
+
+export type EventListenersTable = ListenersTable<RemoteEvent>;
 
 export type SelectFn = (state: any) => any;
 
 export type ObjectT<T> = {[key: string]: T};
 
 export type RemoteSettings = ObjectT<string>;
+
+export type RemoteSettingsListenersTable = ListenersTable<RemoteSettings>;
 
 export type GetRemoteSettingsResponse = {
   remoteSettings: RemoteSettings 

@@ -136,7 +136,7 @@ export const AppKlaarSdk: SdkModule = {
 
   get remoteSettings(): RemoteSettings | null {
     if (this._connector)
-      return this._connector.remoteSettings;
+      return Connector.remoteSettings;
 
     return null;
   },

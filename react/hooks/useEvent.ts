@@ -18,6 +18,7 @@ export const useEvent = (
 
     Connector.addEventListener(listenerKey, innerHandler);
     
+    // ComponentWillUnmount
     return () => {
       Connector.removeEventListener(listenerKey);
     };
