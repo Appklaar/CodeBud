@@ -10,7 +10,13 @@ import {
   EventListenersTable,
   RemoteSettings,
   RefreshRemoteSettingsCallback,
-  RemoteSettingsListenersTable
+  RemoteSettingsListenersTable,
+  PackageConfig,
+  NetworkInterceptorInstance,
+  InterceptedRequest,
+  InterceptedResponse,
+  NetworkInterceptorOnRequestPayload,
+  NetworkInterceptorOnResponsePayload
 } from './types';
 import { CONFIG } from './config';
 import { EventHandleError, ScenarioHandleError } from './Errors';
@@ -28,6 +34,7 @@ export class Connector {
   private _apiKey: string;
   private _instructionsTable: InstructionsTable = {};
   private _onEventUsersCustomCallback: OnEventUsersCustomCallback;
+  private _networkInterceptor: NetworkInterceptorInstance | null = null;
   private _connectionInfoPacket: ConnectionInfoPacket;
   private _lastEventLog: undefined | EventLog;
   private _dataToForward: null | {[key: string]: any} = null;
@@ -200,12 +207,13 @@ export class Connector {
     }
   }
  
-  constructor(apiKey: string, instructions: Instruction[], usersCustomCallback: OnEventUsersCustomCallback) {
+  constructor(apiKey: string, instructions: Instruction[], usersCustomCallback: OnEventUsersCustomCallback, config?: PackageConfig) {
     this.instanceId = Connector._currentInstanceId++;
 
     this._apiKey = apiKey;
     this._fillInstructionsTable(instructions);
     this._onEventUsersCustomCallback = usersCustomCallback;
+
     this._connectionInfoPacket = {
       apiKey,
       clientType: "CLIENT",
@@ -219,6 +227,23 @@ export class Connector {
       transports: ['websocket'],
       query: {apiKey: this._apiKey}
     });
+
+    if (config?.enableNetworkMonitor) {
+      import(config.enableReactNative ? "./Network/NetworkInterceptorRN" : "./Network/Interceptor").then(({ NetworkInterceptor }) => {
+        this._networkInterceptor = new NetworkInterceptor({
+          onRequest: ({ request, requestId }: NetworkInterceptorOnRequestPayload) => {
+            console.log(`Intercepted request ${requestId}`, request);
+            const timestamp = moment().valueOf();
+            this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_REQUEST, {request, requestId, timestamp});
+          },
+          onResponse: ({ response, request, requestId }: NetworkInterceptorOnResponsePayload) => {
+            console.log(`Intercepted response ${requestId}`, response);
+            const timestamp = moment().valueOf();
+            this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_RESPONSE, {response, request, requestId, timestamp});
+          }
+        });
+      });
+    }
 
     this.refreshRemoteSettings();
 
@@ -282,6 +307,11 @@ export class Connector {
     this._lastEventLog = undefined;
     this._dataToForward = null;
     this._currentReduxStateCopy = null;
+
+    if (this._networkInterceptor) {
+      this._networkInterceptor.dispose();
+      this._networkInterceptor = null;
+    }
     
     // Think about it later
     Connector.lastEvent = null;

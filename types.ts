@@ -1,5 +1,44 @@
 import { EventHandleError, ScenarioHandleError } from "./Errors";
 
+export type ObjectT<T> = {[key: string]: T};
+
+export type PackageConfig = {
+  enableNetworkMonitor?: boolean;
+  enableReactNative?: boolean;
+};
+
+export type NetworkInterceptorInstance = {
+  dispose: () => void;
+};
+
+export type InterceptedRequest = {
+  method: string;
+  body: ObjectT<string> | undefined;
+  url: string;
+};
+
+export type InterceptedResponse = {
+  status: number;
+  statusText: string;
+  data: ObjectT<any> | undefined;
+};
+
+export type NetworkInterceptorOnRequestPayload = {
+  request: InterceptedRequest;
+  requestId: string;
+};
+
+export type NetworkInterceptorOnResponsePayload = {
+  response: InterceptedResponse;
+  request?: InterceptedRequest; 
+  requestId: string
+};
+
+export type NetworkInterceptorCallbacksTable = {
+  onRequest: (data: NetworkInterceptorOnRequestPayload) => void;
+  onResponse: (data: NetworkInterceptorOnResponsePayload) => void;
+};
+
 export type ErrorResponse = {
   message?: string;
   invalidParameters?: string[];
@@ -73,8 +112,6 @@ export type ListenersTable<T> = {[key: string]: (data: T) => any};
 export type EventListenersTable = ListenersTable<RemoteEvent>;
 
 export type SelectFn = (state: any) => any;
-
-export type ObjectT<T> = {[key: string]: T};
 
 export type RemoteSettings = ObjectT<string>;
 

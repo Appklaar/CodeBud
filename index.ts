@@ -1,5 +1,5 @@
 import { Connector } from './Connector';
-import { Instruction, OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettings, SelectFn } from './types';
+import { Instruction, OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettings, PackageConfig } from './types';
 import { MODULE_STATES, ModuleState } from './States';
 import { EXISTING_SPECIAL_INSTRUCTION_IDS } from './constants/events';
 import { validateApiKey } from './constants/regex';
@@ -18,8 +18,9 @@ type SdkModule = {
 	 * Initialize the module.
 	 * @param {String} apiKey The api key of yours.
 	 * @param {Instruction[]} instructions Instructions that will be available from remote testing panel.
+   * @param {PackageConfig | undefined} config Package config (if needed)
 	 */
-  init: (apiKey: string, instructions: Instruction[]) => void;
+  init: (apiKey: string, instructions: Instruction[], config?: PackageConfig) => void;
   /**
 	 * Set custom callback that will be called on every action.
 	 * @param {OnEventUsersCustomCallback} usersCustomCallback Callback.
@@ -61,7 +62,7 @@ export const AppKlaarSdk: SdkModule = {
   _currentState: "NOT_INITIATED",
   _onEventUsersCustomCallback: () => {},
 
-  init(apiKey: string, instructions: Instruction[]) {
+  init(apiKey, instructions, config) {
     if (this._currentState === "WORKING") {
       console.warn("Sdk already initiated!");
       return;
@@ -109,16 +110,16 @@ export const AppKlaarSdk: SdkModule = {
 
     if (!(instructionPrototypes.has("login") && instructionPrototypes.has("logout"))) {
       if (!instructionPrototypes.has("login"))
-        console.warn(`Login instruction is requied. Please, provide at least one instruction with prototype "login"`);
+        console.warn(`Login instruction is required. Please, provide at least one instruction with prototype "login"`);
       if (!instructionPrototypes.has("logout"))
-        console.warn(`Logout instruction is requied. Please, provide at least one instruction with prototype "logout"`);
+        console.warn(`Logout instruction is required. Please, provide at least one instruction with prototype "logout"`);
         
       this._currentState = "INVALID_PARAMETERS";
       return;
     }
 
     this._apiKey = apiKey;
-    this._connector = new Connector(apiKey, instructions, (event) => this._onEventUsersCustomCallback(event));
+    this._connector = new Connector(apiKey, instructions, (event) => this._onEventUsersCustomCallback(event), config);
     this._currentState = "WORKING";
   },
 
