@@ -1,5 +1,5 @@
 import { NetworkInterceptorApi } from './AbstractInterceptor';
-import { startNetworkLogging, clearRequests } from "./../react/native";
+import { startNetworkLogging, clearRequests } from "./../rn";
 import { NetworkInterceptorCallbacksTable } from '../types';
 
 class NetworkInterceptorRN extends NetworkInterceptorApi {
@@ -49,4 +49,4 @@ class NetworkInterceptorRN extends NetworkInterceptorApi {
   }
 };
 
-export { NetworkInterceptorRN as NetworkInterceptor };
+export { NetworkInterceptorRN };

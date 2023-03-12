@@ -96,4 +96,4 @@ class NetworkInterceptorClassic extends NetworkInterceptorApi {
   };
 };
 
-export { NetworkInterceptorClassic as NetworkInterceptor };
+export { NetworkInterceptorClassic };
