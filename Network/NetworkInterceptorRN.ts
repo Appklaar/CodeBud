@@ -1,6 +1,7 @@
 import { NetworkInterceptorApi } from './AbstractInterceptor';
 import { startNetworkLogging, clearRequests } from "./../rn";
 import { NetworkInterceptorCallbacksTable } from '../types';
+import { CONFIG } from './../config';
 
 class NetworkInterceptorRN extends NetworkInterceptorApi {
   protected async formatRequest(data: any) {
@@ -28,6 +29,9 @@ class NetworkInterceptorRN extends NetworkInterceptorApi {
 
     startNetworkLogging({ 
       forceEnable: true,
+      // Ignore all HEAD requests
+      ignoredPatterns: [/^HEAD /],
+      ignoredHosts: CONFIG.NETWORK_INTERCEPTOR.FILTER_INNER_REQUESTS ? [CONFIG.DOMAIN] : undefined,
       onRequest: async (data: any) => {
         try {
           const formattedRequest = await this.formatRequest(data);

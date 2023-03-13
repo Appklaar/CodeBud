@@ -3,6 +3,7 @@ type DevMode = "PRODUCTION" | "DEVELOPMENT";
 const DEV_MODE: DevMode = "PRODUCTION";
 
 const CONFIG_INNER = {
+  DOMAIN: "unitap.online",
   MAIN_URL: "https://unitap.online",
   BASE_URL: 'https://unitap.online/api',
   DEV: {

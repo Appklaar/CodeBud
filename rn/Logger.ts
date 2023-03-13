@@ -79,10 +79,6 @@ export default class Logger {
     }
 
     this.requests.unshift(newRequest);
-    
-    if (this.externalOnRequestCallback) {
-      this.externalOnRequestCallback(newRequest);
-    }
   };
 
   private requestHeadersCallback = (
@@ -132,6 +128,10 @@ export default class Logger {
       responseURL,
       responseType,
     });
+    if (this.externalOnRequestCallback) {
+      const updatedRequest = this.getRequest(xhr._index);
+      updatedRequest && this.externalOnRequestCallback(updatedRequest);
+    }
     this.callback(this.requests);
   };
 
