@@ -22,6 +22,7 @@ export type InterceptedResponse = {
   status: number;
   statusText: string;
   data: ObjectT<any> | undefined;
+  responseHeaders?: ObjectT<any> | undefined;
 };
 
 export type NetworkInterceptorOnRequestPayload = {

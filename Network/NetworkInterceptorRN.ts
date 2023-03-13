@@ -15,10 +15,19 @@ class NetworkInterceptorRN extends NetworkInterceptorApi {
   }
 
   protected async formatResponse(data: any) {
+    let responseData: {[key: string]: any};
+
+    try {
+      responseData = JSON.parse(data.response);
+    } catch (e) {
+      responseData = data.response;
+    }
+
     const formattedResponse = {
       status: data.status,
       statusText: data.status.toString(),
-      data: data.response
+      data: responseData,
+      responseHeaders: data.responseHeaders
     };
 
     return formattedResponse;
