@@ -1,5 +1,5 @@
 import { Connector } from './Connector';
-import { OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettings, PackageConfig } from './types';
+import { OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettings, PackageConfig, Instruction } from './types';
 import { ModuleState } from './States';
 
 export type AppKlaarSdk = {

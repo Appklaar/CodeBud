@@ -1,12 +1,13 @@
 {
   "name": "@appklaar/appklaar_sdk",
-  "version": "1.4.10",
+  "version": "1.4.12",
   "private": false,
   "description": "App Klaar remote testing SDK",
   "main": "index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "ts-node index.ts"
+    "start": "ts-node index.ts",
+    "build_js": "tsc --build"
   },
   "author": "Aleksandr Nikolotov",
   "dependencies": {
@@ -26,6 +27,7 @@
     "@types/react": "^18.0.28",
     "@typescript-eslint/eslint-plugin": "^5.55.0",
     "@typescript-eslint/parser": "^5.55.0",
+    "react-native": "^0.71.4",
     "typescript": "^4.9.5"
   },
   "peerDependencies": {
