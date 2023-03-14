@@ -22,7 +22,8 @@ const SOCKET_EVENTS_EMIT = {
   SAVE_SCENARIO_LOG: "saveScenarioLog",
   SAVE_REDUX_STATE_COPY: "saveReduxStateCopy",
   SAVE_INTERCEPTED_REQUEST: "saveInterceptedRequest",
-  SAVE_INTERCEPTED_RESPONSE: "saveInterceptedResponse"
+  SAVE_INTERCEPTED_RESPONSE: "saveInterceptedResponse",
+  SAVE_MOBILE_APP_STATE: "saveMobileAppState"
 };
 
 const sauce = create({

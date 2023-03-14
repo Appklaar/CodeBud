@@ -212,12 +212,12 @@ export class Connector {
 
     this._networkInterceptor = new config.Interceptor({
       onRequest: ({ request, requestId }: NetworkInterceptorOnRequestPayload) => {
-        console.log(`Intercepted request ${requestId}`, request);
+        // console.log(`Intercepted request ${requestId}`, request);
         const timestamp = moment().valueOf();
         this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_REQUEST, {request, requestId, timestamp});
       },
       onResponse: ({ response, request, requestId }: NetworkInterceptorOnResponsePayload) => {
-        console.log(`Intercepted response ${requestId}`, response);
+        // console.log(`Intercepted response ${requestId}`, response);
         const timestamp = moment().valueOf();
         this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_RESPONSE, {response, request, requestId, timestamp});
       }
@@ -228,8 +228,8 @@ export class Connector {
     const { subscribeForAppStateChanges } = await import("./rn");
 
     subscribeForAppStateChanges(
-      () => console.log("Foreground"), 
-      () => console.log("Background")
+      () => this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_MOBILE_APP_STATE, {foreground: true}), 
+      () => this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_MOBILE_APP_STATE, {foreground: false}),
     );
   };
  
