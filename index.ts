@@ -5,6 +5,8 @@ import { EXISTING_SPECIAL_INSTRUCTION_IDS } from './constants/events';
 import { validateApiKey } from './constants/regex';
 import { AppKlaarSdk as ModuleInterface } from './moduleInterface';
 
+export type { Instruction } from './types';
+
 export const AppKlaarSdk: ModuleInterface = {
   _apiKey : null,
   _connector: null,
