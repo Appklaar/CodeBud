@@ -21,7 +21,7 @@ const CONFIG_INNER = {
   SOCKET_RECONNECTION_DELAY: 5e3,
   NETWORK_INTERCEPTOR: {
     FILTER_INNER_REQUESTS: {
-      "PRODUCTION": false,
+      "PRODUCTION": true,
       "DEVELOPMENT": true
     }
   }

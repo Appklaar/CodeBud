@@ -223,6 +223,15 @@ export class Connector {
       }
     });
   };
+
+  private async _setupRN(config: PackageConfig) {
+    const { subscribeForAppStateChanges } = await import("./rn");
+
+    subscribeForAppStateChanges(
+      () => console.log("Foreground"), 
+      () => console.log("Background")
+    );
+  };
  
   constructor(apiKey: string, instructions: Instruction[], usersCustomCallback: OnEventUsersCustomCallback, config?: PackageConfig) {
     this.instanceId = Connector._currentInstanceId++;
@@ -247,6 +256,9 @@ export class Connector {
 
     if (config?.enableNetworkMonitor) {
       this._setupNetworkMonitor(config);
+    }
+    if (config?.enableReactNative) {
+      this._setupRN(config);
     }
 
     this.refreshRemoteSettings();
