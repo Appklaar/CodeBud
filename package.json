@@ -10,25 +10,23 @@
   },
   "author": "Aleksandr Nikolotov",
   "dependencies": {
-    "@babel/preset-typescript": "^7.17.12",
     "@mswjs/interceptors": "^0.22.7",
-    "@types/node": "^16.11.6",
-    "@typescript-eslint/eslint-plugin": "5.27.1",
-    "@typescript-eslint/parser": "5.27.1",
-    "EventEmitter": "^1.0.0",
-    "JSON": "^1.0.0",
     "apisauce": "^2.1.6",
     "moment": "^2.29.4",
     "socket.io-client": "^4.5.4",
-    "ts-node": "^10.8.1",
-    "typescript": "^4.8.4"
+    "ts-node": "^10.8.1"
   },
   "devDependencies": {
     "@babel/cli": "^7.17.10",
     "@babel/core": "^7.18.2",
     "@babel/preset-env": "^7.18.2",
+    "@babel/preset-typescript": "^7.21.0",
     "@babel/runtime": "^7.18.3",
-    "@types/react": "^18.0.28"
+    "@types/node": "^18.15.3",
+    "@types/react": "^18.0.28",
+    "@typescript-eslint/eslint-plugin": "^5.55.0",
+    "@typescript-eslint/parser": "^5.55.0",
+    "typescript": "^4.9.5"
   },
   "peerDependencies": {
     "react": "*",
