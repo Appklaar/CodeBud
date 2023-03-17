@@ -1,6 +1,6 @@
 import { NetworkRequestInfo } from "./NetworkRequestInfo";
 
-export { Headers, RequestMethod } from "./NetworkRequestInfo";
+export type { Headers, RequestMethod } from "./NetworkRequestInfo";
 
 export type StartNetworkLoggingOptions = {
   /**

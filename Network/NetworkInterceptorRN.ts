@@ -5,10 +5,19 @@ import { CONFIG } from './../config';
 
 class NetworkInterceptorRN extends NetworkInterceptorApi {
   protected async formatRequest(data: any) {
+    let body: {[key: string]: any};
+
+    try {
+      body = JSON.parse(data.dataSent);
+    } catch (e) {
+      body = data.dataSent;
+    }
+
     const formattedRequest = {
       method: data.method,
-      body: undefined,
-      url: data.url
+      body: body,
+      url: data.url,
+      requestHeaders: data.requestHeaders
     };
 
     return formattedRequest;
@@ -55,8 +64,6 @@ class NetworkInterceptorRN extends NetworkInterceptorApi {
         }
       }
     });
-
-    stopNetworkLogging();
   };
 
   public dispose() {

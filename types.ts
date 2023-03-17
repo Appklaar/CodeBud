@@ -14,8 +14,9 @@ export type NetworkInterceptorInstance = {
 
 export type InterceptedRequest = {
   method: string;
-  body: ObjectT<string> | undefined;
+  body: ObjectT<any> | undefined;
   url: string;
+  requestHeaders?: ObjectT<any> | undefined;
 };
 
 export type InterceptedResponse = {
