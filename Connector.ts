@@ -225,9 +225,7 @@ export class Connector {
   };
 
   private async _setupRN(config: PackageConfig) {
-    const { subscribeForAppStateChanges } = await import("./rn");
-
-    subscribeForAppStateChanges(
+    config.ReactNativePlugin.subscribeForAppStateChanges(
       () => this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_MOBILE_APP_STATE, {foreground: true}), 
       () => this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_MOBILE_APP_STATE, {foreground: false}),
     );
@@ -257,7 +255,7 @@ export class Connector {
     if (config?.enableNetworkMonitor) {
       this._setupNetworkMonitor(config);
     }
-    if (config?.enableReactNative) {
+    if (config?.ReactNativePlugin) {
       this._setupRN(config);
     }
 

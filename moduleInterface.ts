@@ -2,7 +2,7 @@ import { Connector } from './Connector';
 import { OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettings, PackageConfig, Instruction } from './types';
 import { ModuleState } from './States';
 
-export type AppKlaarSdk = {
+export interface AppKlaarSdk {
   _apiKey: null | string;
   _connector: null | Connector;
   _currentState: ModuleState;

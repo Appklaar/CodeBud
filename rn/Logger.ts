@@ -202,6 +202,13 @@ export default class Logger {
     this.enabled = true;
   };
 
+  disableXHRInterception() {
+    if (this.enabled) {
+      XHRInterceptor.disableInterception();
+      this.enabled = false;
+    }
+  }
+
   getRequests = () => {
     return this.requests;
   };

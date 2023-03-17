@@ -114,8 +114,8 @@ export const AppKlaarSdk: ModuleInterface = {
 
   disconnect() {
     this._connector && this._connector.disconnect();
-    this._apiKey = null;
     this._connector = null;
+    this._apiKey = null;
     this._currentState = "NOT_INITIATED";
     this._onEventUsersCustomCallback = () => {};
   }

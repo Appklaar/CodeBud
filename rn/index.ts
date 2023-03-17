@@ -10,23 +10,27 @@ export const getRequests = () => logger.getRequests();
 
 export const clearRequests = () => logger.clearRequests();
 
-export const subscribeForAppStateChanges = (onForeground: () => void, onBackground: () => void) => {
-  let appState: string = '';
+export const stopNetworkLogging = () => logger.disableXHRInterception();
 
-  const subscription = AppState.addEventListener(
-    'change',
-    (nextAppState: string) => {
-      if (appState.match(/inactive|background/) && nextAppState === 'active') {
-        // App has come to the foreground! (развернули)
-        onForeground();
-      }
+export const ReactNativePlugin = {
+  subscribeForAppStateChanges: (onForeground: () => void, onBackground: () => void) => {
+    let appState: string = '';
 
-      if (nextAppState.match(/inactive|background/) && appState === 'active') {
-        //App has come to the background.
-        onBackground();
-      }
+    const subscription = AppState.addEventListener(
+      'change',
+      (nextAppState: string) => {
+        if (appState.match(/inactive|background/) && nextAppState === 'active') {
+          // App has come to the foreground! (развернули)
+          onForeground();
+        }
 
-      appState = nextAppState;
-    },
-  );
+        if (nextAppState.match(/inactive|background/) && appState === 'active') {
+          //App has come to the background.
+          onBackground();
+        }
+
+        appState = nextAppState;
+      },
+    );
+  }
 }

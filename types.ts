@@ -4,8 +4,8 @@ export type ObjectT<T> = {[key: string]: T};
 
 export type PackageConfig = {
   enableNetworkMonitor?: boolean;
-  enableReactNative?: boolean;
   Interceptor?: any;
+  ReactNativePlugin?: any;
 };
 
 export type NetworkInterceptorInstance = {

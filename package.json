@@ -7,7 +7,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "ts-node index.ts",
-    "build_js": "tsc --build"
+    "build": "tsc --build",
+    "clean": "tsc --build --clean"
   },
   "author": "Aleksandr Nikolotov",
   "dependencies": {
@@ -27,6 +28,7 @@
     "@types/react": "^18.0.28",
     "@typescript-eslint/eslint-plugin": "^5.55.0",
     "@typescript-eslint/parser": "^5.55.0",
+    "react-native": "^0.71.4",
     "typescript": "^4.9.5"
   },
   "peerDependencies": {

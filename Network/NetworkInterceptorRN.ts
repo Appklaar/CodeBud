@@ -1,5 +1,5 @@
 import { NetworkInterceptorApi } from './AbstractInterceptor';
-import { startNetworkLogging, clearRequests } from "./../rn";
+import { startNetworkLogging, stopNetworkLogging, clearRequests } from "./../rn";
 import { NetworkInterceptorCallbacksTable } from '../types';
 import { CONFIG } from './../config';
 
@@ -55,10 +55,13 @@ class NetworkInterceptorRN extends NetworkInterceptorApi {
         }
       }
     });
+
+    stopNetworkLogging();
   };
 
   public dispose() {
     clearRequests();
+    stopNetworkLogging();
   }
 };
 
