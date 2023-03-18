@@ -82,8 +82,18 @@ export type ClientType = "CLIENT" | "ADMIN_PANEL";
 export type ConnectionInfoPacket = {
   apiKey: string; 
   clientType: ClientType;
+  publicKey: Uint8Array;
   availableInstructions: InstructionPublicFields[];
   specialInstructions: InstructionPublicFields[];
+};
+
+export type AdminConnectedData = {
+  isAdmin: boolean;
+  publicKey: {
+    type: string;
+    data: number[];
+  };
+  personalKey: string;
 };
 
 export type EventLog = {

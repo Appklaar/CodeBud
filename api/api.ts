@@ -11,7 +11,8 @@ const SOCKET_EVENTS_LISTEN = {
   ERROR: "error",
   CONNECT_ERROR: "connect_error",
   DISCONNECT: "disconnect",
-  SAVE_NEW_REMOTE_SETTINGS: "saveNewRemoteSettings"
+  SAVE_NEW_REMOTE_SETTINGS: "saveNewRemoteSettings",
+  ADMIN_CONNECTED: "ADMIN_CONNECTED",
 };
 
 const SOCKET_EVENTS_EMIT = {

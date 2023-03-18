@@ -1,6 +1,6 @@
 {
   "name": "@appklaar/appklaar_sdk",
-  "version": "1.4.13",
+  "version": "1.4.26",
   "private": false,
   "description": "App Klaar remote testing SDK",
   "main": "index.ts",
@@ -16,7 +16,9 @@
     "apisauce": "^2.1.6",
     "moment": "^2.29.4",
     "socket.io-client": "^4.5.4",
-    "ts-node": "^10.8.1"
+    "ts-node": "^10.8.1",
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-util": "^0.15.1"
   },
   "devDependencies": {
     "@babel/cli": "^7.17.10",

@@ -14,7 +14,8 @@ import {
   PackageConfig,
   NetworkInterceptorInstance,
   NetworkInterceptorOnRequestPayload,
-  NetworkInterceptorOnResponsePayload
+  NetworkInterceptorOnResponsePayload,
+  AdminConnectedData
 } from './types';
 import { CONFIG } from './config';
 import { EventHandleError, ScenarioHandleError } from './Errors';
@@ -22,6 +23,8 @@ import { api, SOCKET_EVENTS_LISTEN, SOCKET_EVENTS_EMIT } from './api/api';
 import { SPECIAL_INSTRUCTIONS_TABLE, SPECIAL_INSTRUCTIONS } from './constants/events';
 import { io, Socket } from "socket.io-client";
 import { stringifyIfNotString } from './helperFunctions';
+import { box, randomBytes } from 'tweetnacl';
+import { decodeUTF8, encodeBase64 } from 'tweetnacl-util';
 import moment from 'moment';
 
 export class Connector {
@@ -38,6 +41,9 @@ export class Connector {
   private _dataToForward: null | {[key: string]: any} = null;
   private _socket: Socket;
   private _currentReduxStateCopy: any = null;
+  private _keyPair: nacl.BoxKeyPair;
+  private _adminPanelPublicKey: Uint8Array | null = null;
+  private _sharedKey: Uint8Array | null = null;
 
   public static lastEvent: RemoteEvent | null = null;
   public readonly instanceId: number;
@@ -56,6 +62,32 @@ export class Connector {
 
   public static removeRemoteSettingsListener(key: string) {
     delete Connector._remoteSettingsListenersTable[key];
+  };
+
+  private _newNonce() {
+    return randomBytes(box.nonceLength);
+  };
+
+  private _encryptData(json: any) {
+    try {
+      if (!this._sharedKey)
+        throw new Error("Shared key not generated");
+
+      const nonce = this._newNonce();
+      const messageUint8 = decodeUTF8(JSON.stringify(json));
+
+      const encrypted = box.after(messageUint8, nonce, this._sharedKey);
+
+      const fullMessage = new Uint8Array(nonce.length + encrypted.length);
+      fullMessage.set(nonce);
+      fullMessage.set(encrypted, nonce.length);
+
+      const base64FullMessage = encodeBase64(fullMessage);
+      return base64FullMessage;
+    } catch (e) {
+      console.log(e);
+      return JSON.stringify({msg: "Data encryption error"});
+    }
   };
   
   private _fillInstructionsTable(instructions: Instruction[]) {
@@ -214,12 +246,14 @@ export class Connector {
       onRequest: ({ request, requestId }: NetworkInterceptorOnRequestPayload) => {
         // console.log(`Intercepted request ${requestId}`, request);
         const timestamp = moment().valueOf();
-        this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_REQUEST, {request, requestId, timestamp});
+        const encryptedData = this._encryptData({request, requestId, timestamp});
+        this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_REQUEST, encryptedData);
       },
       onResponse: ({ response, request, requestId }: NetworkInterceptorOnResponsePayload) => {
         // console.log(`Intercepted response ${requestId}`, response);
         const timestamp = moment().valueOf();
-        this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_RESPONSE, {response, request, requestId, timestamp});
+        const encryptedData = this._encryptData({response, request, requestId, timestamp});
+        this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_RESPONSE, encryptedData);
       }
     });
   };
@@ -238,9 +272,12 @@ export class Connector {
     this._fillInstructionsTable(instructions);
     this._onEventUsersCustomCallback = usersCustomCallback;
 
+    this._keyPair = box.keyPair();
+
     this._connectionInfoPacket = {
       apiKey,
       clientType: "CLIENT",
+      publicKey: this._keyPair.publicKey,
       availableInstructions: this._getInstructionsPublicFields(instructions),
       specialInstructions: this._getInstructionsPublicFields(SPECIAL_INSTRUCTIONS)
     };
@@ -264,6 +301,16 @@ export class Connector {
     this._socket.on(SOCKET_EVENTS_LISTEN.CONNECT, () => {
       console.log('Socket connected:', this._socket.connected);
       this._socket.emit(SOCKET_EVENTS_EMIT.SET_CONNECTION_INFO, this._connectionInfoPacket);
+    });
+
+    this._socket.on(SOCKET_EVENTS_LISTEN.ADMIN_CONNECTED, (data: AdminConnectedData) => {
+      if (!data.isAdmin) {
+        console.warn('Warning: client connected');
+        return;
+      }
+
+      this._adminPanelPublicKey = new Uint8Array(data.publicKey.data);
+      this._sharedKey = box.before(this._adminPanelPublicKey, this._keyPair.secretKey);
     });
 
     this._socket.on(SOCKET_EVENTS_LISTEN.EVENT, (event: RemoteEvent) => this._innerHandleEvent(event));
@@ -298,8 +345,9 @@ export class Connector {
         const previousReduxStateCopyStr = JSON.stringify(this._currentReduxStateCopy);
         this._currentReduxStateCopy = selectFn(store.getState());
 
-        if (previousReduxStateCopyStr !== JSON.stringify(this._currentReduxStateCopy) && this._socket.connected) {
-          this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_REDUX_STATE_COPY, {state: this._currentReduxStateCopy});
+        if (this._socket.connected && previousReduxStateCopyStr !== JSON.stringify(this._currentReduxStateCopy)) {
+          const encryptedData = this._encryptData({state: this._currentReduxStateCopy});
+          this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_REDUX_STATE_COPY, encryptedData);
         }
       }
     } catch (e) {
@@ -321,6 +369,8 @@ export class Connector {
     this._lastEventLog = undefined;
     this._dataToForward = null;
     this._currentReduxStateCopy = null;
+    this._adminPanelPublicKey = null;
+    this._sharedKey = null;
 
     if (this._networkInterceptor) {
       this._networkInterceptor.dispose();
