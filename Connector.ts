@@ -23,8 +23,6 @@ import { api, SOCKET_EVENTS_LISTEN, SOCKET_EVENTS_EMIT } from './api/api';
 import { SPECIAL_INSTRUCTIONS_TABLE, SPECIAL_INSTRUCTIONS } from './constants/events';
 import { io, Socket } from "socket.io-client";
 import { stringifyIfNotString } from './helperFunctions';
-import { box, randomBytes } from 'tweetnacl';
-import { decodeUTF8, encodeBase64 } from 'tweetnacl-util';
 import moment from 'moment';
 
 export class Connector {
@@ -41,9 +39,7 @@ export class Connector {
   private _dataToForward: null | {[key: string]: any} = null;
   private _socket: Socket;
   private _currentReduxStateCopy: any = null;
-  private _keyPair: nacl.BoxKeyPair;
-  private _adminPanelPublicKey: Uint8Array | null = null;
-  private _sharedKey: Uint8Array | null = null;
+  private _encryption: any = null;
 
   public static lastEvent: RemoteEvent | null = null;
   public readonly instanceId: number;
@@ -64,30 +60,11 @@ export class Connector {
     delete Connector._remoteSettingsListenersTable[key];
   };
 
-  private _newNonce() {
-    return randomBytes(box.nonceLength);
-  };
-
   private _encryptData(json: any) {
-    try {
-      if (!this._sharedKey)
-        throw new Error("Shared key not generated");
+    if (!this._encryption)
+      return JSON.stringify(json);
 
-      const nonce = this._newNonce();
-      const messageUint8 = decodeUTF8(JSON.stringify(json));
-
-      const encrypted = box.after(messageUint8, nonce, this._sharedKey);
-
-      const fullMessage = new Uint8Array(nonce.length + encrypted.length);
-      fullMessage.set(nonce);
-      fullMessage.set(encrypted, nonce.length);
-
-      const base64FullMessage = encodeBase64(fullMessage);
-      return base64FullMessage;
-    } catch (e) {
-      console.log(e);
-      return JSON.stringify({msg: "Data encryption error"});
-    }
+    return this._encryption.encryptData(json);
   };
   
   private _fillInstructionsTable(instructions: Instruction[]) {
@@ -238,10 +215,6 @@ export class Connector {
   }
 
   private async _setupNetworkMonitor(config: PackageConfig) {
-    if (!config.Interceptor) {
-      console.warn("Error: no network interceptor passed!");
-    }
-
     this._networkInterceptor = new config.Interceptor({
       onRequest: ({ request, requestId }: NetworkInterceptorOnRequestPayload) => {
         // console.log(`Intercepted request ${requestId}`, request);
@@ -272,12 +245,14 @@ export class Connector {
     this._fillInstructionsTable(instructions);
     this._onEventUsersCustomCallback = usersCustomCallback;
 
-    this._keyPair = box.keyPair();
+    if (config?.EncryptionPlugin) {
+      this._encryption = new config.EncryptionPlugin();
+    }
 
     this._connectionInfoPacket = {
       apiKey,
       clientType: "CLIENT",
-      publicKey: this._keyPair.publicKey,
+      publicKey: this._encryption?.publicKey,
       availableInstructions: this._getInstructionsPublicFields(instructions),
       specialInstructions: this._getInstructionsPublicFields(SPECIAL_INSTRUCTIONS)
     };
@@ -289,7 +264,7 @@ export class Connector {
       query: {apiKey: this._apiKey}
     });
 
-    if (config?.enableNetworkMonitor) {
+    if (config?.Interceptor) {
       this._setupNetworkMonitor(config);
     }
     if (config?.ReactNativePlugin) {
@@ -309,8 +284,8 @@ export class Connector {
         return;
       }
 
-      this._adminPanelPublicKey = new Uint8Array(data.publicKey.data);
-      this._sharedKey = box.before(this._adminPanelPublicKey, this._keyPair.secretKey);
+      if (this._encryption)
+        this._encryption.setAdminPanelPublicKey(data.publicKey.data);
     });
 
     this._socket.on(SOCKET_EVENTS_LISTEN.EVENT, (event: RemoteEvent) => this._innerHandleEvent(event));
@@ -369,8 +344,7 @@ export class Connector {
     this._lastEventLog = undefined;
     this._dataToForward = null;
     this._currentReduxStateCopy = null;
-    this._adminPanelPublicKey = null;
-    this._sharedKey = null;
+    this._encryption = null;
 
     if (this._networkInterceptor) {
       this._networkInterceptor.dispose();

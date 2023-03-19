@@ -2,8 +2,8 @@ declare module '@appklaar/appklaar_sdk' {
   export type ObjectT<T> = {[key: string]: T};
 
   export type PackageConfig = {
-    enableNetworkMonitor?: boolean;
     Interceptor?: any;
+    EncryptionPlugin?: any;
     ReactNativePlugin?: any;
   };
   
@@ -149,4 +149,42 @@ declare module '@appklaar/appklaar_sdk' {
   }
 
   export const AppKlaarSdk: AppKlaarSdk;
+}
+
+declare module '@appklaar/appklaar_sdk/react' {
+  export type RemoteEvent = {
+    id: string;
+    eventType: "default" | "special";
+    instructionId: string;
+    args?: any[];
+  };
+
+  export type RemoteSettings = {[key: string]: string};
+
+  export function useEvent(
+    handler: (event: RemoteEvent) => any, 
+    instructionIds: ReadonlyArray<string>
+  ): void;
+
+  export function useRemoteSettings(): RemoteSettings | null;
+}
+
+declare module '@appklaar/appklaar_sdk/Network/NetworkInterceptorClassic' {
+  export class NetworkInterceptorClassic {}
+}
+
+declare module '@appklaar/appklaar_sdk/Network/NetworkInterceptorRN' {
+  export class NetworkInterceptorRN {}
+}
+
+declare module '@appklaar/appklaar_sdk/Network/NetworkInterceptorXMLHttp' {
+  export class NetworkInterceptorXMLHttp {}
+}
+
+declare module '@appklaar/appklaar_sdk/rn' {
+  export const ReactNativePlugin: any;
+}
+
+declare module '@appklaar/appklaar_sdk/encryption' {
+  export class EncryptionPlugin {}
 }

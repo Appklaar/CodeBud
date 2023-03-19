@@ -3,8 +3,8 @@ import { EventHandleError, ScenarioHandleError } from "./Errors";
 export type ObjectT<T> = {[key: string]: T};
 
 export type PackageConfig = {
-  enableNetworkMonitor?: boolean;
   Interceptor?: any;
+  EncryptionPlugin?: any;
   ReactNativePlugin?: any;
 };
 
@@ -82,7 +82,7 @@ export type ClientType = "CLIENT" | "ADMIN_PANEL";
 export type ConnectionInfoPacket = {
   apiKey: string; 
   clientType: ClientType;
-  publicKey: Uint8Array;
+  publicKey?: Uint8Array;
   availableInstructions: InstructionPublicFields[];
   specialInstructions: InstructionPublicFields[];
 };
