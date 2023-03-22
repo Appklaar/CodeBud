@@ -8,6 +8,7 @@ const SOCKET_EVENTS_LISTEN = {
   CONNECT: "connect",
   EVENT: "event",
   SCENARIO: "scenario",
+  STOP_SCENARIO_EXECUTION: "stopScenarioExecution",
   ERROR: "error",
   CONNECT_ERROR: "connect_error",
   DISCONNECT: "disconnect",

@@ -35,6 +35,7 @@ export class Connector {
   private _onEventUsersCustomCallback: OnEventUsersCustomCallback;
   private _networkInterceptor: NetworkInterceptorInstance | null = null;
   private _connectionInfoPacket: ConnectionInfoPacket;
+  private _shouldStopScenarioExecution: boolean = false;
   private _lastEventLog: undefined | EventLog;
   private _dataToForward: null | {[key: string]: any} = null;
   private _socket: Socket;
@@ -172,7 +173,13 @@ export class Connector {
       this._socket.emit(SOCKET_EVENTS_EMIT.EXECUTING_SCENARIO, scenario.id);
 
       const startTimestamp = moment().valueOf();
+      let executionWasStoppedManually = false;
       for (const event of scenario.events) {
+        if (this._shouldStopScenarioExecution) {
+          this._shouldStopScenarioExecution = false;
+          executionWasStoppedManually = true;
+          break;
+        }
         if (!this._lastEventLog?.result?.shouldSkipNextEvent) {
           const eventLog = await this._innerHandleEvent(event, true);
           this._lastEventLog = eventLog;
@@ -184,6 +191,7 @@ export class Connector {
       const scenarioLog: ScenarioLog = {
         scenario,
         ok: true,
+        executionWasStoppedManually,
         startTimestamp,
         endTimestamp,
         elapsedTime: endTimestamp - startTimestamp
@@ -279,6 +287,7 @@ export class Connector {
     });
 
     this._socket.on(SOCKET_EVENTS_LISTEN.ADMIN_CONNECTED, (data: AdminConnectedData) => {
+      console.log("AdminConnected", data)
       if (!data.isAdmin) {
         console.warn('Warning: client connected');
         return;
@@ -291,6 +300,11 @@ export class Connector {
     this._socket.on(SOCKET_EVENTS_LISTEN.EVENT, (event: RemoteEvent) => this._innerHandleEvent(event));
 
     this._socket.on(SOCKET_EVENTS_LISTEN.SCENARIO, (scenario: RemoteScenario) => this._innerHandleScenario(scenario));
+
+    this._socket.on(SOCKET_EVENTS_LISTEN.STOP_SCENARIO_EXECUTION, () => {
+      console.log("Stopping scenario manually...");
+      this._shouldStopScenarioExecution = true;
+    });
 
     this._socket.on(SOCKET_EVENTS_LISTEN.SAVE_NEW_REMOTE_SETTINGS, (r: RemoteSettings) => {
       Connector._remoteSettings = r;

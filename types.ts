@@ -114,6 +114,7 @@ export type RemoteScenario = {
 export type ScenarioLog = {
   scenario: RemoteScenario;
   ok: boolean;
+  executionWasStoppedManually?: boolean;
   error?: ScenarioHandleError;
   startTimestamp?: number;
   endTimestamp?: number;
