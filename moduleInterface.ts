@@ -40,9 +40,10 @@ export interface AppKlaarSdk {
    * Function that creates Redux Store Change Handler, that you can use to subscribe to Store Changes.
    * @param {any} store Your store.
    * @param {SelectFn} selectFn select function that returns part of the store.
+   * @param {number} [batchingTimeMs = 500] batching time of sending new redux state copy
    * @returns {Function} Store change handler function.
    */
-  createReduxStoreChangeHandler: (store: any, selectFn: (state: any) => any) => (() => void);
+  createReduxStoreChangeHandler: (store: any, selectFn: (state: any) => any, batchingTimeMs: number) => (() => void);
   /**
    * Close the connection.
    */

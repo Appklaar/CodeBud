@@ -39,6 +39,7 @@ export class Connector {
   private _lastEventLog: undefined | EventLog;
   private _dataToForward: null | {[key: string]: any} = null;
   private _socket: Socket;
+  private _sendReduxStateBatchingTimer: NodeJS.Timeout | null = null;
   private _currentReduxStateCopy: any = null;
   private _encryption: any = null;
 
@@ -328,15 +329,20 @@ export class Connector {
     });
   }
 
-  public createReduxStoreChangeHandler(store: any, selectFn: (state: any) => any): () => void {
+  public createReduxStoreChangeHandler(store: any, selectFn: (state: any) => any, batchingTimeMs: number): () => void {
     try {
       return () => {
         const previousReduxStateCopyStr = JSON.stringify(this._currentReduxStateCopy);
         this._currentReduxStateCopy = selectFn(store.getState());
 
         if (this._socket.connected && previousReduxStateCopyStr !== JSON.stringify(this._currentReduxStateCopy)) {
-          const encryptedData = this._encryptData({state: this._currentReduxStateCopy});
-          this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_REDUX_STATE_COPY, encryptedData);
+          if (this._sendReduxStateBatchingTimer)
+            clearTimeout(this._sendReduxStateBatchingTimer);
+
+          this._sendReduxStateBatchingTimer = setTimeout(() => {
+            const encryptedData = this._encryptData({state: this._currentReduxStateCopy});
+            this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_REDUX_STATE_COPY, encryptedData);
+          }, batchingTimeMs);
         }
       }
     } catch (e) {

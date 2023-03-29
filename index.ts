@@ -100,12 +100,12 @@ export const AppKlaarSdk: ModuleInterface = {
       console.warn("Sdk not initiated.");
   },
 
-  createReduxStoreChangeHandler(store, selectFn) {
+  createReduxStoreChangeHandler(store, selectFn, batchingTimeMs = 500) {
     try {
       if (!this._connector)
         throw new Error('Something went wrong while creating ReduxStoreChangeHandler. Double check that you initialized sdk');
 
-      return this._connector.createReduxStoreChangeHandler(store, selectFn);
+      return this._connector.createReduxStoreChangeHandler(store, selectFn, batchingTimeMs);
     } catch (e) {
       console.warn(e);
       return () => {};
