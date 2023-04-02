@@ -1,4 +1,4 @@
-# React Native Inspect Image
+# @appklaar/codebud
 
 JavaScript package for remote app testing & debugging
 
