@@ -18,8 +18,8 @@ yarn add @appklaar/codebud
 
 ## Quick Links
 
-* [Documentation](https://www.npmjs.com/package/@appklaar/codebud)
-* [Chat with us](t.me/appklaar)
+* [Documentation](https://appklaar.gitbook.io/codebud/)
+* [Contact us](t.me/appklaar)
 
 
 ## Authors

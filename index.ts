@@ -7,7 +7,7 @@ import { AppKlaarSdk as ModuleInterface } from './moduleInterface';
 
 export type { Instruction } from './types';
 
-export const AppKlaarSdk: ModuleInterface = {
+export const CodeBud: ModuleInterface = {
   _apiKey : null,
   _connector: null,
   _currentState: "NOT_INITIATED",

@@ -1,4 +1,4 @@
-declare module '@appklaar/appklaar_sdk' {
+declare module '@appklaar/codebud' {
   export type ObjectT<T> = {[key: string]: T};
 
   export type PackageConfig = {
@@ -139,20 +139,20 @@ declare module '@appklaar/appklaar_sdk' {
      * Function that creates Redux Store Change Handler, that you can use to subscribe to Store Changes.
      * @param {any} store Your store.
      * @param {SelectFn} selectFn select function that returns part of the store.
-     * @param {number} [batchingTimeMs = 500] batching time of sending new redux state copy
+     * @param {number} [batchingTimeMs = 500] batching time of sending new redux state copy (in ms). Defaults to 500
      * @returns {Function} Store change handler function.
      */
-    createReduxStoreChangeHandler: (store: any, selectFn: (state: any) => any, batchingTimeMs: number) => (() => void);
+    createReduxStoreChangeHandler: (store: any, selectFn: (state: any) => any, batchingTimeMs?: number) => (() => void);
     /**
      * Close the connection.
      */
     disconnect: () => void;
   }
 
-  export const AppKlaarSdk: AppKlaarSdk;
+  export const CodeBud: AppKlaarSdk;
 }
 
-declare module '@appklaar/appklaar_sdk/react' {
+declare module '@appklaar/codebud/react' {
   export type RemoteEvent = {
     id: string;
     eventType: "default" | "special";
@@ -170,22 +170,22 @@ declare module '@appklaar/appklaar_sdk/react' {
   export function useRemoteSettings(): RemoteSettings | null;
 }
 
-declare module '@appklaar/appklaar_sdk/Network/NetworkInterceptorClassic' {
+declare module '@appklaar/codebud/Network/NetworkInterceptorClassic' {
   export class NetworkInterceptorClassic {}
 }
 
-declare module '@appklaar/appklaar_sdk/Network/NetworkInterceptorRN' {
+declare module '@appklaar/codebud/Network/NetworkInterceptorRN' {
   export class NetworkInterceptorRN {}
 }
 
-declare module '@appklaar/appklaar_sdk/Network/NetworkInterceptorXMLHttp' {
+declare module '@appklaar/codebud/Network/NetworkInterceptorXMLHttp' {
   export class NetworkInterceptorXMLHttp {}
 }
 
-declare module '@appklaar/appklaar_sdk/rn' {
+declare module '@appklaar/codebud/rn' {
   export const ReactNativePlugin: any;
 }
 
-declare module '@appklaar/appklaar_sdk/encryption' {
+declare module '@appklaar/codebud/encryption' {
   export class EncryptionPlugin {}
 }
