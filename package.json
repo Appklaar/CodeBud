@@ -11,6 +11,15 @@
     "clean": "tsc --build --clean"
   },
   "author": "Aleksandr Nikolotov",
+  "keywords": [
+    "codebud",
+    "debugging",
+    "testing",
+    "react",
+    "react-native",
+    "redux",
+    "network"
+  ],
   "dependencies": {
     "@mswjs/interceptors": "^0.22.7",
     "apisauce": "^2.1.6",
