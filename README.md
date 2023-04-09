@@ -18,7 +18,7 @@ yarn add @appklaar/codebud
 
 ## Quick Links
 
-* [Testing Panel (website)] (https://unitap.online/)
+* [Testing Panel (website)](https://unitap.online/)
 * [Documentation](https://appklaar.gitbook.io/codebud/)
 * [Contact us](https://t.me/appklaar)
 
