@@ -2,7 +2,7 @@
   "name": "@appklaar/codebud",
   "version": "1.0.0",
   "private": false,
-  "description": "App Klaar package for remote app testing & debugging",
+  "description": "CodeBud - AppKlaar's package for remote app testing & debugging",
   "main": "index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -37,9 +37,6 @@
     "@types/react": "^18.0.28",
     "@typescript-eslint/eslint-plugin": "^5.55.0",
     "@typescript-eslint/parser": "^5.55.0",
-    "react-native": "^0.71.4",
-    "tweetnacl": "^1.0.3",
-    "tweetnacl-util": "^0.15.1",
     "typescript": "^4.9.5"
   },
   "peerDependencies": {
@@ -68,11 +65,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Appklaar/AppKlaarSDK.git"
+    "url": "git+https://github.com/Appklaar/CodeBud.git"
   },
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Appklaar/AppKlaarSDK/issues"
+    "url": "https://github.com/Appklaar/CodeBud/issues"
   },
-  "homepage": "https://github.com/Appklaar/AppKlaarSDK#readme"
+  "homepage": "https://github.com/Appklaar/CodeBud#readme"
 }

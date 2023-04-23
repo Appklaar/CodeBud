@@ -4,6 +4,7 @@ import { MODULE_STATES } from './States';
 import { EXISTING_SPECIAL_INSTRUCTION_IDS } from './constants/events';
 import { validateApiKey } from './constants/regex';
 import { AppKlaarSdk as ModuleInterface } from './moduleInterface';
+import { CONFIG } from './config';
 
 export type { Instruction } from './types';
 
@@ -15,7 +16,7 @@ export const CodeBud: ModuleInterface = {
 
   init(apiKey, instructions, config) {
     if (this._currentState === "WORKING") {
-      console.warn("Sdk already initiated!");
+      console.warn(`${CONFIG.PRODUCT_NAME} already initiated!`);
       return;
     }
 
@@ -97,13 +98,13 @@ export const CodeBud: ModuleInterface = {
     if (this._connector)
       this._connector.refreshRemoteSettings(callbackFn);
     else 
-      console.warn("Sdk not initiated.");
+      console.warn(`${CONFIG.PRODUCT_NAME} not initiated.`);
   },
 
   createReduxStoreChangeHandler(store, selectFn, batchingTimeMs = 500) {
     try {
       if (!this._connector)
-        throw new Error('Something went wrong while creating ReduxStoreChangeHandler. Double check that you initialized sdk');
+        throw new Error(`Something went wrong while creating ReduxStoreChangeHandler. Double check that you initialized ${CONFIG.PRODUCT_NAME}`);
 
       return this._connector.createReduxStoreChangeHandler(store, selectFn, batchingTimeMs);
     } catch (e) {
