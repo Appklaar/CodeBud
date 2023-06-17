@@ -2,6 +2,7 @@ import { XMLHttpRequestInterceptor } from '@mswjs/interceptors/XMLHttpRequest';
 import { NetworkInterceptorApi } from './AbstractInterceptor';
 import { NetworkInterceptorCallbacksTable } from '../types';
 import { shouldProceedIntercepted } from './helpers';
+import { codebudConsoleLog } from '../helperFunctions';
 
 class NetworkInterceptorXMLHttp extends NetworkInterceptorApi {
   private _interceptor: XMLHttpRequestInterceptor | null = null;
@@ -17,13 +18,14 @@ class NetworkInterceptorXMLHttp extends NetworkInterceptorApi {
         body = await request.clone().text();
       }
     } catch (e) {
-      console.log('Request transfrom error');
+      codebudConsoleLog('Request transfrom error');
     }
 
     const formattedRequest = {
       method: request.method,
       body,
-      url: request.url
+      url: request.url,
+      requestHeaders: Object.fromEntries(request.headers)
     };
 
     return formattedRequest;
@@ -40,13 +42,14 @@ class NetworkInterceptorXMLHttp extends NetworkInterceptorApi {
         data = await response.clone().text();
       }
     } catch (e) {
-      console.log('Response transfrom error');
+      codebudConsoleLog(e);
     }
 
     const formattedResponse = {
       status: response.status,
       statusText: response.statusText,
-      data
+      data,
+      responseHeaders: Object.fromEntries(response.headers)
     };
 
     return formattedResponse;
@@ -68,7 +71,7 @@ class NetworkInterceptorXMLHttp extends NetworkInterceptorApi {
             requestId
           });
         } catch (e) {
-          console.log(e);
+          codebudConsoleLog(e);
         }
       }
     });
@@ -84,7 +87,7 @@ class NetworkInterceptorXMLHttp extends NetworkInterceptorApi {
             requestId
           });
         } catch (e) {
-          console.log(e);
+          codebudConsoleLog(e);
         }
       }
     });

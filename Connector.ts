@@ -22,7 +22,7 @@ import { EventHandleError, ScenarioHandleError } from './Errors';
 import { api, SOCKET_EVENTS_LISTEN, SOCKET_EVENTS_EMIT } from './api/api';
 import { SPECIAL_INSTRUCTIONS_TABLE, SPECIAL_INSTRUCTIONS } from './constants/events';
 import { io, Socket } from "socket.io-client";
-import { stringifyIfNotString } from './helperFunctions';
+import { codebudConsoleLog, codebudConsoleWarn, stringifyIfNotString } from './helperFunctions';
 import moment from 'moment';
 
 export class Connector {
@@ -97,7 +97,7 @@ export class Connector {
   };
 
   private async _innerHandleEvent(event: RemoteEvent, isPartOfScenario: boolean = false) {
-    console.log('On event:', event);
+    codebudConsoleLog('On event:', event);
 
     try {
       const correspondingInstructionsTable = event.eventType === "default" ? this._instructionsTable: SPECIAL_INSTRUCTIONS_TABLE;
@@ -153,7 +153,7 @@ export class Connector {
 
       return eventLog;
     } catch (error) {
-      console.log(`Error while trying to handle event.`, error);
+      codebudConsoleLog(`Error while trying to handle event.`, error);
 
       // If current event was part of scenario then throw error so it would be processed inside _innerHandleScenario's catch block
       if (isPartOfScenario)
@@ -164,7 +164,7 @@ export class Connector {
   }
 
   private async _innerHandleScenario(scenario: RemoteScenario) {
-    console.log('On scenario:', scenario);
+    // codebudConsoleLog('On scenario:', scenario);
 
     var eventIndex = 0;
     this._lastEventLog = undefined;
@@ -199,7 +199,7 @@ export class Connector {
       };
       this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_SCENARIO_LOG, scenarioLog);
     } catch (error) {
-      console.log(`Error while trying to handle scenario.`, error);
+      codebudConsoleLog(`Error while trying to handle scenario.`, error);
       const scenarioError = new ScenarioHandleError(scenario, scenario.events[eventIndex], "Scenario execution failed.");
       this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_SCENARIO_LOG, {scenario, ok: false, error: scenarioError});
     }
@@ -219,20 +219,20 @@ export class Connector {
       Connector._remoteSettings = remoteSettings;
       callbackFn && callbackFn(remoteSettings);
     } catch (e) {
-      console.warn("Error while trying to fetch remote settings", e);
+      codebudConsoleWarn("Error while trying to fetch remote settings", e);
     }
   }
 
   private async _setupNetworkMonitor(config: PackageConfig) {
     this._networkInterceptor = new config.Interceptor({
       onRequest: ({ request, requestId }: NetworkInterceptorOnRequestPayload) => {
-        // console.log(`Intercepted request ${requestId}`, request);
+        // codebudConsoleLog(`Intercepted request ${requestId}`, request);
         const timestamp = moment().valueOf();
         const encryptedData = this._encryptData({request, requestId, timestamp});
         this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_REQUEST, encryptedData);
       },
       onResponse: ({ response, request, requestId }: NetworkInterceptorOnResponsePayload) => {
-        // console.log(`Intercepted response ${requestId}`, response);
+        // codebudConsoleLog(`Intercepted response ${requestId}`, response);
         const timestamp = moment().valueOf();
         const encryptedData = this._encryptData({response, request, requestId, timestamp});
         this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_RESPONSE, encryptedData);
@@ -283,14 +283,13 @@ export class Connector {
     this.refreshRemoteSettings();
 
     this._socket.on(SOCKET_EVENTS_LISTEN.CONNECT, () => {
-      console.log('Socket connected:', this._socket.connected);
+      codebudConsoleLog('Socket connected:', this._socket.connected);
       this._socket.emit(SOCKET_EVENTS_EMIT.SET_CONNECTION_INFO, this._connectionInfoPacket);
     });
 
     this._socket.on(SOCKET_EVENTS_LISTEN.ADMIN_CONNECTED, (data: AdminConnectedData) => {
-      console.log("AdminConnected", data)
+      codebudConsoleLog("AdminConnected");
       if (!data.isAdmin) {
-        console.warn('Warning: client connected');
         return;
       }
 
@@ -303,7 +302,7 @@ export class Connector {
     this._socket.on(SOCKET_EVENTS_LISTEN.SCENARIO, (scenario: RemoteScenario) => this._innerHandleScenario(scenario));
 
     this._socket.on(SOCKET_EVENTS_LISTEN.STOP_SCENARIO_EXECUTION, () => {
-      console.log("Stopping scenario manually...");
+      codebudConsoleLog("Stopping scenario manually...");
       this._shouldStopScenarioExecution = true;
     });
 
@@ -314,15 +313,15 @@ export class Connector {
     });
 
     this._socket.on(SOCKET_EVENTS_LISTEN.CONNECT_ERROR, (err) => {
-      console.warn(`Socket connect_error: ${err.message}`);
+      codebudConsoleWarn(`Socket connect_error: ${err.message}`);
     });
 
     this._socket.on(SOCKET_EVENTS_LISTEN.ERROR, (error) => {
-      console.log('Socket send error:', error);
+      codebudConsoleLog('Socket send error:', error);
     });
 
     this._socket.on(SOCKET_EVENTS_LISTEN.DISCONNECT, async () => {
-      console.log('Socket disconnected.');
+      codebudConsoleLog('Socket disconnected.');
       setTimeout(() => {
         this._socket.connect();
       }, CONFIG.SOCKET_RECONNECTION_DELAY);
@@ -346,7 +345,7 @@ export class Connector {
         }
       }
     } catch (e) {
-      console.warn(`Error while trying to create ReduxStoreChangeHandler`, e);
+      codebudConsoleWarn(`Error while trying to create ReduxStoreChangeHandler`, e);
       return () => {};
     }
   }

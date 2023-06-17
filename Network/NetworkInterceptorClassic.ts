@@ -2,11 +2,13 @@ import { ClientRequestInterceptor } from '@mswjs/interceptors/ClientRequest';
 import { NetworkInterceptorApi } from './AbstractInterceptor';
 import { NetworkInterceptorCallbacksTable } from '../types';
 import { shouldProceedIntercepted } from './helpers';
+import { codebudConsoleLog } from '../helperFunctions';
 
 class NetworkInterceptorClassic extends NetworkInterceptorApi {
   private _interceptor: ClientRequestInterceptor | null = null;
 
   protected async formatRequest(request: any) {
+    console.log('DEBUG', Object.fromEntries(request.headers));
     let body: any;
     const isJsonContentType = request.headers.get("content-type")?.includes("application/json");
 
@@ -17,13 +19,14 @@ class NetworkInterceptorClassic extends NetworkInterceptorApi {
         body = await request.clone().text();
       }
     } catch (e) {
-      console.log('Request transfrom error');
+      codebudConsoleLog('Request transfrom error');
     }
 
     const formattedRequest = {
       method: request.method,
       body,
-      url: request.url
+      url: request.url,
+      requestHeaders: Object.fromEntries(request.headers)
     };
 
     return formattedRequest;
@@ -40,13 +43,14 @@ class NetworkInterceptorClassic extends NetworkInterceptorApi {
         data = await response.clone().text();
       }
     } catch (e) {
-      console.log('Response transfrom error');
+      codebudConsoleLog('Response transfrom error');
     }
 
     const formattedResponse = {
       status: response.status,
       statusText: response.statusText,
-      data
+      data,
+      responseHeaders: Object.fromEntries(response.headers)
     };
 
     return formattedResponse;
@@ -68,7 +72,7 @@ class NetworkInterceptorClassic extends NetworkInterceptorApi {
             requestId
           });
         } catch (e) {
-          console.log(e);
+          codebudConsoleLog(e);
         }
       }
     });
@@ -84,7 +88,7 @@ class NetworkInterceptorClassic extends NetworkInterceptorApi {
             requestId
           });
         } catch (e) {
-          console.log(e);
+          codebudConsoleLog(e);
         }
       }
     });

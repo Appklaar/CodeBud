@@ -1,5 +1,6 @@
 import { box, randomBytes } from 'tweetnacl';
 import { decodeUTF8, encodeBase64 } from 'tweetnacl-util';
+import { codebudConsoleLog, codebudConsoleWarn } from '../helperFunctions';
 
 export class EncryptionPlugin {
   private _keyPair: nacl.BoxKeyPair | null = null;
@@ -27,7 +28,7 @@ export class EncryptionPlugin {
       const base64FullMessage = encodeBase64(fullMessage);
       return base64FullMessage;
     } catch (e) {
-      console.log(e);
+      codebudConsoleLog(e);
       return JSON.stringify({msg: "Data encryption error"});
     }
   };
@@ -44,9 +45,8 @@ export class EncryptionPlugin {
     if (this._keyPair) {
       this._adminPanelPublicKey = new Uint8Array(data);
       this._sharedKey = box.before(this._adminPanelPublicKey, this._keyPair.secretKey);
-      console.log('this._sharedKey',this._sharedKey)
     } else {
-      console.warn("No keypair generated!");
+      codebudConsoleWarn("No keypair generated!");
     }
   }
 };

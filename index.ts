@@ -5,6 +5,7 @@ import { EXISTING_SPECIAL_INSTRUCTION_IDS } from './constants/events';
 import { validateApiKey } from './constants/regex';
 import { AppKlaarSdk as ModuleInterface } from './moduleInterface';
 import { CONFIG } from './config';
+import { codebudConsoleWarn } from './helperFunctions';
 
 export type { Instruction } from './types';
 
@@ -16,12 +17,12 @@ export const CodeBud: ModuleInterface = {
 
   init(apiKey, instructions, config) {
     if (this._currentState === "WORKING") {
-      console.warn(`${CONFIG.PRODUCT_NAME} already initiated!`);
+      codebudConsoleWarn(`${CONFIG.PRODUCT_NAME} already initiated!`);
       return;
     }
 
     if (!validateApiKey(apiKey)) {
-      console.warn(`Wrong API_KEY format!`);
+      codebudConsoleWarn(`Wrong API_KEY format!`);
       this._currentState = "INVALID_PARAMETERS";
       return;
     }
@@ -32,13 +33,13 @@ export const CodeBud: ModuleInterface = {
     const instructionPrototypes = new Set<string>();
     for (let el of instructions) {
       if (EXISTING_SPECIAL_INSTRUCTION_IDS.has(el.id as any)) {
-        console.warn(`Instruction id: ${el.id} is reserved for special instruction. You should change it for something else.`);
+        codebudConsoleWarn(`Instruction id: ${el.id} is reserved for special instruction. You should change it for something else.`);
         this._currentState = "INVALID_PARAMETERS";
         return;
       }
 
       if (instructionIds.has(el.id)) {
-        console.warn(`Duplicate instruction id passed; InstructionId: ${el.id}`);
+        codebudConsoleWarn(`Duplicate instruction id passed; InstructionId: ${el.id}`);
         this._currentState = "INVALID_PARAMETERS";
         return;
       } else {
@@ -46,15 +47,10 @@ export const CodeBud: ModuleInterface = {
       }
 
       if (el.handler.length > 1) {
-        console.warn(`Instruction id: ${el.id} handler takes ${el.handler.length} args. Your handler should accept max 1 object as arguement. Number of fields is not limited.`);
+        codebudConsoleWarn(`Instruction id: ${el.id} handler takes ${el.handler.length} args. Your handler should accept max 1 object as arguement. Number of fields is not limited.`);
         this._currentState = "INVALID_PARAMETERS";
         return;
       }
-
-      // if (el.prototype === "login") {
-      //   if (!el.parametersDescription?.login || !el.parametersDescription.pass)
-      //     console.warn(`Instruction with id ${el.id} is marked with login prototype, but its parameters dont match the prototype. We recommend to pass parametersDescription with "login" and "pass" fields, where "login" means user identifier (such as phone number or email). You can ignore this warning if you are sure what you are doing.`);
-      // }
 
       if (el.prototype)
         instructionPrototypes.add(el.prototype);
@@ -62,9 +58,9 @@ export const CodeBud: ModuleInterface = {
 
     if (!(instructionPrototypes.has("login") && instructionPrototypes.has("logout"))) {
       if (!instructionPrototypes.has("login"))
-        console.warn(`Login instruction is required. Please, provide at least one instruction with prototype "login"`);
+        codebudConsoleWarn(`Login instruction is required. Please, provide at least one instruction with prototype "login"`);
       if (!instructionPrototypes.has("logout"))
-        console.warn(`Logout instruction is required. Please, provide at least one instruction with prototype "logout"`);
+        codebudConsoleWarn(`Logout instruction is required. Please, provide at least one instruction with prototype "logout"`);
         
       this._currentState = "INVALID_PARAMETERS";
       return;
@@ -98,7 +94,7 @@ export const CodeBud: ModuleInterface = {
     if (this._connector)
       this._connector.refreshRemoteSettings(callbackFn);
     else 
-      console.warn(`${CONFIG.PRODUCT_NAME} not initiated.`);
+      codebudConsoleWarn(`${CONFIG.PRODUCT_NAME} not initiated.`);
   },
 
   createReduxStoreChangeHandler(store, selectFn, batchingTimeMs = 500) {
@@ -108,7 +104,7 @@ export const CodeBud: ModuleInterface = {
 
       return this._connector.createReduxStoreChangeHandler(store, selectFn, batchingTimeMs);
     } catch (e) {
-      console.warn(e);
+      codebudConsoleWarn(e);
       return () => {};
     }
   },

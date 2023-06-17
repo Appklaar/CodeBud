@@ -4,6 +4,7 @@ const DEV_MODE: DevMode = "PRODUCTION";
 
 const CONFIG_INNER = {
   PRODUCT_NAME: "CodeBud",
+  MAX_IDENTICAL_CONSOLE_WARNINGS_IN_A_ROW: 3,
   DOMAIN: "unitap.online",
   MAIN_URL: "https://unitap.online",
   BASE_URL: 'https://unitap.online/api',

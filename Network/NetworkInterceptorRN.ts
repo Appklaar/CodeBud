@@ -2,6 +2,7 @@ import { NetworkInterceptorApi } from './AbstractInterceptor';
 import { startNetworkLogging, stopNetworkLogging, clearRequests } from "./../rn";
 import { NetworkInterceptorCallbacksTable } from '../types';
 import { CONFIG } from './../config';
+import { codebudConsoleLog } from '../helperFunctions';
 
 class NetworkInterceptorRN extends NetworkInterceptorApi {
   protected async formatRequest(data: any) {
@@ -60,7 +61,7 @@ class NetworkInterceptorRN extends NetworkInterceptorApi {
             requestId: data.id
           });
         } catch (e) {
-          console.log(e);
+          codebudConsoleLog(e);
         }
       }
     });
