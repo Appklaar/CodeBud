@@ -26,6 +26,11 @@ export type InterceptedResponse = {
   responseHeaders?: ObjectT<any> | undefined;
 };
 
+export type InterceptedReduxAction = {
+  type: string;
+  payload?: any;
+}
+
 export type NetworkInterceptorOnRequestPayload = {
   request: InterceptedRequest;
   requestId: string;

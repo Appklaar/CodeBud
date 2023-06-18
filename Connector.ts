@@ -15,14 +15,15 @@ import {
   NetworkInterceptorInstance,
   NetworkInterceptorOnRequestPayload,
   NetworkInterceptorOnResponsePayload,
-  AdminConnectedData
+  AdminConnectedData,
+  InterceptedReduxAction
 } from './types';
 import { CONFIG } from './config';
 import { EventHandleError, ScenarioHandleError } from './Errors';
 import { api, SOCKET_EVENTS_LISTEN, SOCKET_EVENTS_EMIT } from './api/api';
 import { SPECIAL_INSTRUCTIONS_TABLE, SPECIAL_INSTRUCTIONS } from './constants/events';
 import { io, Socket } from "socket.io-client";
-import { codebudConsoleLog, codebudConsoleWarn, stringifyIfNotString } from './helperFunctions';
+import { codebudConsoleLog, codebudConsoleWarn, jsonStringifyKeepMethods, stringifyIfNotString } from './helperFunctions';
 import moment from 'moment';
 
 export class Connector {
@@ -30,6 +31,7 @@ export class Connector {
   private static _remoteSettings: RemoteSettings | null = null;
   private static _eventListenersTable: EventListenersTable = {};
   private static _remoteSettingsListenersTable: RemoteSettingsListenersTable = {};
+  private static _currentInterceptedReduxActionId = 0;
   private _apiKey: string;
   private _instructionsTable: InstructionsTable = {};
   private _onEventUsersCustomCallback: OnEventUsersCustomCallback;
@@ -41,6 +43,8 @@ export class Connector {
   private _socket: Socket;
   private _sendReduxStateBatchingTimer: NodeJS.Timeout | null = null;
   private _currentReduxStateCopy: any = null;
+  private _sendReduxActionsBatchingTimer: NodeJS.Timeout | null = null;
+  private _currentReduxActionsBatch: any[] = [];
   private _encryption: any = null;
 
   public static lastEvent: RemoteEvent | null = null;
@@ -64,7 +68,7 @@ export class Connector {
 
   private _encryptData(json: any) {
     if (!this._encryption)
-      return JSON.stringify(json);
+      return jsonStringifyKeepMethods(json);
 
     return this._encryption.encryptData(json);
   };
@@ -350,6 +354,23 @@ export class Connector {
     }
   }
 
+  public handleDispatchedReduxAction(action: InterceptedReduxAction, batchingTimeMs: number) {
+    if (this._socket.connected) {
+      const timestamp = moment().valueOf();
+      const actionId = Connector._currentInterceptedReduxActionId++;
+      this._currentReduxActionsBatch.push({actionId: `RA_${actionId}`, action, timestamp});
+
+      if (this._sendReduxActionsBatchingTimer) 
+        clearTimeout(this._sendReduxActionsBatchingTimer);
+
+      this._sendReduxActionsBatchingTimer = setTimeout(() => {
+        const encryptedData = this._encryptData({actions: this._currentReduxActionsBatch});
+        this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_REDUX_ACTIONS_BATCH, encryptedData);
+        this._currentReduxActionsBatch = [];
+      }, batchingTimeMs);
+    }
+  }
+
   public static get remoteSettings(): RemoteSettings | null {
     return Connector._remoteSettings;
   }
@@ -363,6 +384,7 @@ export class Connector {
     this._lastEventLog = undefined;
     this._dataToForward = null;
     this._currentReduxStateCopy = null;
+    this._currentReduxActionsBatch = [];
     this._encryption = null;
 
     if (this._networkInterceptor) {

@@ -5,7 +5,7 @@ import { EXISTING_SPECIAL_INSTRUCTION_IDS } from './constants/events';
 import { validateApiKey } from './constants/regex';
 import { AppKlaarSdk as ModuleInterface } from './moduleInterface';
 import { CONFIG } from './config';
-import { codebudConsoleWarn } from './helperFunctions';
+import { codebudConsoleWarn, emptyMiddleware } from './helperFunctions';
 
 export type { Instruction } from './types';
 
@@ -106,6 +106,16 @@ export const CodeBud: ModuleInterface = {
     } catch (e) {
       codebudConsoleWarn(e);
       return () => {};
+    }
+  },
+
+  createReduxActionMonitorMiddleware(batchingTimeMs = 200) {
+    // @ts-ignore
+    return () => next => action => {
+      if (this._connector)
+        this._connector.handleDispatchedReduxAction(action, batchingTimeMs);
+
+      return next(action);
     }
   },
 

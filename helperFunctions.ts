@@ -1,4 +1,5 @@
 import { CONFIG } from "./config";
+import { ObjectT } from "./types";
 
 export function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -35,4 +36,22 @@ export const codebudConsoleWarn = (...data: any[]) => {
 
 export const codebudConsoleLog = (...data: any[]) => {
   console.log(`${CONFIG.PRODUCT_NAME}:`, ...data);
+}
+
+// @ts-ignore
+export const emptyMiddleware = () => next => action => {
+  return next(action);
+}
+
+export const jsonStringifyKeepMethods = (data: ObjectT<any>) => {
+  return JSON.stringify(
+    data,
+    function(key, value) {
+      if (typeof value === 'function') {
+        return "Function (...)";
+      } else {
+        return value;
+      }
+    }
+  );
 }

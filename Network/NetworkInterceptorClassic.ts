@@ -8,7 +8,6 @@ class NetworkInterceptorClassic extends NetworkInterceptorApi {
   private _interceptor: ClientRequestInterceptor | null = null;
 
   protected async formatRequest(request: any) {
-    console.log('DEBUG', Object.fromEntries(request.headers));
     let body: any;
     const isJsonContentType = request.headers.get("content-type")?.includes("application/json");
 
