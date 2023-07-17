@@ -321,7 +321,7 @@ export class Connector {
     });
 
     this._socket.on(SOCKET_EVENTS_LISTEN.ERROR, (error) => {
-      codebudConsoleLog('Socket send error:', error);
+      codebudConsoleWarn('Socket send error:', error);
     });
 
     this._socket.on(SOCKET_EVENTS_LISTEN.DISCONNECT, async () => {
