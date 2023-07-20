@@ -16,7 +16,9 @@ import {
   NetworkInterceptorOnRequestPayload,
   NetworkInterceptorOnResponsePayload,
   AdminConnectedData,
-  InterceptedReduxAction
+  InterceptedReduxAction,
+  InterceptedReduxActionPreparedData,
+  InterceptedStorageActionPreparedData
 } from './types';
 import { CONFIG } from './config';
 import { EventHandleError, ScenarioHandleError } from './Errors';
@@ -24,6 +26,8 @@ import { api, SOCKET_EVENTS_LISTEN, SOCKET_EVENTS_EMIT } from './api/api';
 import { SPECIAL_INSTRUCTIONS_TABLE, SPECIAL_INSTRUCTIONS } from './constants/events';
 import { io, Socket } from "socket.io-client";
 import { codebudConsoleLog, codebudConsoleWarn, jsonStringifyKeepMethods, stringifyIfNotString } from './helperFunctions';
+import { asyncStoragePlugin } from './asyncStorage/asyncStorage';
+import { localStoragePlugin } from './localStorage/localStorage';
 import moment from 'moment';
 
 export class Connector {
@@ -32,6 +36,7 @@ export class Connector {
   private static _eventListenersTable: EventListenersTable = {};
   private static _remoteSettingsListenersTable: RemoteSettingsListenersTable = {};
   private static _currentInterceptedReduxActionId = 0;
+  private static _currentInterceptedStorageActionId = 0;
   private _apiKey: string;
   private _instructionsTable: InstructionsTable = {};
   private _onEventUsersCustomCallback: OnEventUsersCustomCallback;
@@ -44,8 +49,17 @@ export class Connector {
   private _sendReduxStateBatchingTimer: NodeJS.Timeout | null = null;
   private _currentReduxStateCopy: any = null;
   private _sendReduxActionsBatchingTimer: NodeJS.Timeout | null = null;
-  private _currentReduxActionsBatch: any[] = [];
+  private _currentReduxActionsBatch: InterceptedReduxActionPreparedData[] = [];
   private _encryption: any = null;
+  private _asyncStorageHandler: any = null;
+  private _trackAsyncStorage: (() => void) | undefined;
+  private _untrackAsyncStorage: (() => void) | undefined;
+  private _localStorageHandler: any = null;
+  private _trackLocalStorage: (() => void) | undefined;
+  private _untrackLocalStorage: (() => void) | undefined;
+  private _storageActionsBatchingTimeMs: number = 500;
+  private _sendStorageActionsBatchingTimer: NodeJS.Timeout | null = null;
+  private _currentStorageActionsBatch: InterceptedStorageActionPreparedData[] = [];
 
   public static lastEvent: RemoteEvent | null = null;
   public readonly instanceId: number;
@@ -375,6 +389,43 @@ export class Connector {
     return Connector._remoteSettings;
   }
 
+  // AsyncStorage / localStorage
+  // (used in asyncStoragePlugin, binded context)
+  private _handleInterceptedStorageAction(action: string, data?: any) {
+    if (this._socket.connected) {
+      const timestamp = moment().valueOf();
+      const storageActionId = Connector._currentInterceptedStorageActionId++;
+      this._currentStorageActionsBatch.push({storageActionId: `SA_${storageActionId}`, action, data, timestamp});
+
+      if (this._sendStorageActionsBatchingTimer) 
+        clearTimeout(this._sendStorageActionsBatchingTimer);
+
+      this._sendStorageActionsBatchingTimer = setTimeout(() => {
+        const encryptedData = this._encryptData({storageActions: this._currentStorageActionsBatch});
+        this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_STORAGE_ACTIONS_BATCH, encryptedData);
+        this._currentStorageActionsBatch = [];
+      }, this._storageActionsBatchingTimeMs);
+    }
+  }
+
+  public enableAsyncStorageMonitor(asyncStorage: any, ignoreKeys: string[], batchingTimeMs: number) {
+    this._asyncStorageHandler = asyncStorage;
+    this._storageActionsBatchingTimeMs = batchingTimeMs;
+    // passing Connector class context to asyncStoragePlugin function
+    const controlFunctions = asyncStoragePlugin.bind(this as any)(ignoreKeys);
+    this._trackAsyncStorage = controlFunctions.trackAsyncStorage;
+    this._untrackAsyncStorage = controlFunctions.untrackAsyncStorage;
+  }
+
+  public enableLocalStorageMonitor(localStorage: any, ignoreKeys: string[], batchingTimeMs: number) {
+    this._localStorageHandler = localStorage;
+    this._storageActionsBatchingTimeMs = batchingTimeMs;
+    // passing Connector class context to localStoragePlugin function
+    const controlFunctions = localStoragePlugin.bind(this as any)(ignoreKeys);
+    this._trackLocalStorage = controlFunctions.trackLocalStorage;
+    this._untrackLocalStorage = controlFunctions.untrackLocalStorage;
+  }
+
   // Метод для "чистки" данных нашего SDK
   public disconnect() {
     this._socket.disconnect();
@@ -390,6 +441,16 @@ export class Connector {
     if (this._networkInterceptor) {
       this._networkInterceptor.dispose();
       this._networkInterceptor = null;
+    }
+
+    if (this._asyncStorageHandler) {
+      this._untrackAsyncStorage && this._untrackAsyncStorage();
+      this._asyncStorageHandler = null;
+    }
+
+    if (this._localStorageHandler) {
+      this._untrackLocalStorage && this._untrackLocalStorage();
+      this._localStorageHandler = null;
     }
     
     // Think about it later

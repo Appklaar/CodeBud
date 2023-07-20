@@ -150,6 +150,20 @@ declare module '@appklaar/codebud' {
      */
     createReduxActionMonitorMiddleware: (batchingTimeMs?: number) => any;
     /**
+     * Function that enables AsyncStorage monitor.
+     * @param {any} asyncStorage your AsyncStorage
+     * @param {string[]} [ignoreKeys = []] storage keys that should be ignored. Defaults to empty array.
+     * @param {number} [batchingTimeMs = 500] batching time of sending intercepted storage actions (in ms). Defaults to 500.
+     */
+    enableAsyncStorageMonitor: (asyncStorage: any, ignoreKeys?: string[], batchingTimeMs?: number) => void;
+    /**
+     * Function that enables localStorage monitor.
+     * @param {any} localStorage your localStorage
+     * @param {string[]} [ignoreKeys = []] storage keys that should be ignored. Defaults to empty array.
+     * @param {number} [batchingTimeMs = 500] batching time of sending intercepted storage actions (in ms). Defaults to 500.
+     */
+    enableLocalStorageMonitor: (localStorage: any, ignoreKeys?: string[], batchingTimeMs?: number) => void;
+    /**
      * Close the connection.
      */
     disconnect: () => void;

@@ -119,6 +119,28 @@ export const CodeBud: ModuleInterface = {
     }
   },
 
+  enableAsyncStorageMonitor(asyncStorage, ignoreKeys = [], batchingTimeMs = 500) {
+    try {
+      if (!this._connector)
+        throw new Error(`Something went wrong while creating AsyncStorage monitor. Double check that you initialized ${CONFIG.PRODUCT_NAME}`);
+
+      return this._connector.enableAsyncStorageMonitor(asyncStorage, ignoreKeys, batchingTimeMs);
+    } catch (e) {
+      codebudConsoleWarn(e);
+    }
+  },
+
+  enableLocalStorageMonitor(localStorage, ignoreKeys = [], batchingTimeMs = 500) {
+    try {
+      if (!this._connector)
+        throw new Error(`Something went wrong while creating localStorage monitor. Double check that you initialized ${CONFIG.PRODUCT_NAME}`);
+
+      return this._connector.enableLocalStorageMonitor(localStorage, ignoreKeys, batchingTimeMs);
+    } catch (e) {
+      codebudConsoleWarn(e);
+    }
+  },
+
   disconnect() {
     this._connector && this._connector.disconnect();
     this._connector = null;

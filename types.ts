@@ -31,6 +31,19 @@ export type InterceptedReduxAction = {
   payload?: any;
 }
 
+export type InterceptedReduxActionPreparedData = {
+  actionId: string;
+  action: InterceptedReduxAction;
+  timestamp: number;
+}
+
+export type InterceptedStorageActionPreparedData = {
+  storageActionId: string;
+  action: string;
+  data?: any;
+  timestamp: number;
+}
+
 export type NetworkInterceptorOnRequestPayload = {
   request: InterceptedRequest;
   requestId: string;
