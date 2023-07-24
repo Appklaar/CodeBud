@@ -2,7 +2,7 @@ import { ClientRequestInterceptor } from '@mswjs/interceptors/ClientRequest';
 import { NetworkInterceptorApi } from './AbstractInterceptor';
 import { NetworkInterceptorCallbacksTable } from '../types';
 import { shouldProceedIntercepted } from './helpers';
-import { codebudConsoleLog } from '../helperFunctions';
+import { codebudConsoleLog } from '../helpers/helperFunctions';
 
 class NetworkInterceptorClassic extends NetworkInterceptorApi {
   private _interceptor: ClientRequestInterceptor | null = null;

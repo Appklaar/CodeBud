@@ -65,6 +65,12 @@ export interface AppKlaarSdk {
    */
   enableLocalStorageMonitor: (localStorage: any, ignoreKeys?: string[], batchingTimeMs?: number) => void;
   /**
+   * Send custom event that will be shown in timeline on network tab.
+   * @param {string} title Title of the event
+   * @param {any} data Data that you want to share
+   */
+  captureEvent: (title: string, data: any) => void;
+  /**
    * Close the connection.
    */
   disconnect: () => void;

@@ -1,6 +1,6 @@
 import { box, randomBytes } from 'tweetnacl';
 import { decodeUTF8, encodeBase64 } from 'tweetnacl-util';
-import { codebudConsoleLog, codebudConsoleWarn, jsonStringifyKeepMethods } from '../helperFunctions';
+import { codebudConsoleLog, codebudConsoleWarn, jsonStringifyKeepMethods } from '../helpers/helperFunctions';
 
 export class EncryptionPlugin {
   private _keyPair: nacl.BoxKeyPair | null = null;

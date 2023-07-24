@@ -1,5 +1,5 @@
 import { SpecialInstructionsTable, SpecialInstructionId, Instruction } from './../types';
-import { delay as customDelay } from '../helperFunctions';
+import { delay as customDelay } from '../helpers/helperFunctions';
 
 export const EXISTING_SPECIAL_INSTRUCTION_IDS: Set<SpecialInstructionId> = new Set([
   "condition", "delay", "forwardData"

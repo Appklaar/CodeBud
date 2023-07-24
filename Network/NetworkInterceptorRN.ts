@@ -2,7 +2,7 @@ import { NetworkInterceptorApi } from './AbstractInterceptor';
 import { startNetworkLogging, stopNetworkLogging, clearRequests } from "./../rn";
 import { NetworkInterceptorCallbacksTable } from '../types';
 import { CONFIG } from './../config';
-import { codebudConsoleLog } from '../helperFunctions';
+import { codebudConsoleLog } from '../helpers/helperFunctions';
 
 class NetworkInterceptorRN extends NetworkInterceptorApi {
   protected async formatRequest(data: any) {

@@ -2,7 +2,7 @@ import { XMLHttpRequestInterceptor } from '@mswjs/interceptors/XMLHttpRequest';
 import { NetworkInterceptorApi } from './AbstractInterceptor';
 import { NetworkInterceptorCallbacksTable } from '../types';
 import { shouldProceedIntercepted } from './helpers';
-import { codebudConsoleLog } from '../helperFunctions';
+import { codebudConsoleLog } from '../helpers/helperFunctions';
 
 class NetworkInterceptorXMLHttp extends NetworkInterceptorApi {
   private _interceptor: XMLHttpRequestInterceptor | null = null;

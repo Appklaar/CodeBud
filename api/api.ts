@@ -27,7 +27,8 @@ const SOCKET_EVENTS_EMIT = {
   SAVE_INTERCEPTED_REQUEST: "saveInterceptedRequest",
   SAVE_INTERCEPTED_RESPONSE: "saveInterceptedResponse",
   SAVE_MOBILE_APP_STATE: "saveMobileAppState",
-  SAVE_INTERCEPTED_STORAGE_ACTIONS_BATCH: "saveInterceptedStorageActionsBatch"
+  SAVE_INTERCEPTED_STORAGE_ACTIONS_BATCH: "saveInterceptedStorageActionsBatch",
+  CAPTURE_EVENT: "captureEvent"
 };
 
 const sauce = create({

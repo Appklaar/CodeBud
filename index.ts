@@ -5,7 +5,7 @@ import { EXISTING_SPECIAL_INSTRUCTION_IDS } from './constants/events';
 import { validateApiKey } from './constants/regex';
 import { AppKlaarSdk as ModuleInterface } from './moduleInterface';
 import { CONFIG } from './config';
-import { codebudConsoleWarn, emptyMiddleware } from './helperFunctions';
+import { codebudConsoleWarn } from './helpers/helperFunctions';
 
 export type { Instruction } from './types';
 
@@ -141,6 +141,17 @@ export const CodeBud: ModuleInterface = {
     }
   },
 
+  captureEvent(title: string, data: any) {
+    try {
+      if (!this._connector)
+        throw new Error(`Unable to capture event. Double check that you initialized ${CONFIG.PRODUCT_NAME}`);
+
+      return this._connector.captureEvent(title, data);
+    } catch (e) {
+      codebudConsoleWarn(e);
+    }
+  },
+ 
   disconnect() {
     this._connector && this._connector.disconnect();
     this._connector = null;

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { RemoteEvent } from '../../types';
 import { Connector } from './../../Connector';
-import { v4 as uuid } from 'uuid';
+import { getId } from './../../helpers/random';
 
 export const useEvent = (
   handler: (event: RemoteEvent) => any, 
@@ -9,7 +9,7 @@ export const useEvent = (
 ) => {
   // ComponentDidMount
   useEffect(() => {
-    const listenerKey = uuid();
+    const listenerKey = getId();
 
     const innerHandler = (event: RemoteEvent) => {
       if (instructionIds.includes(event.instructionId))

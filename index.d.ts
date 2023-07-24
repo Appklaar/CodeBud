@@ -164,6 +164,12 @@ declare module '@appklaar/codebud' {
      */
     enableLocalStorageMonitor: (localStorage: any, ignoreKeys?: string[], batchingTimeMs?: number) => void;
     /**
+     * Send custom event that will be shown in timeline on network tab.
+     * @param {string} title Title of the event
+     * @param {any} data Data that you want to share
+     */
+    captureEvent: (title: string, data: any) => void;
+    /**
      * Close the connection.
      */
     disconnect: () => void;
@@ -200,6 +206,10 @@ declare module '@appklaar/codebud/Network/NetworkInterceptorRN' {
 
 declare module '@appklaar/codebud/Network/NetworkInterceptorXMLHttp' {
   export class NetworkInterceptorXMLHttp {}
+}
+
+declare module '@appklaar/codebud/Network/NetworkInterceptorXHR' {
+  export class NetworkInterceptorXHR {}
 }
 
 declare module '@appklaar/codebud/rn' {

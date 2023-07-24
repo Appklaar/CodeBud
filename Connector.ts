@@ -25,7 +25,7 @@ import { EventHandleError, ScenarioHandleError } from './Errors';
 import { api, SOCKET_EVENTS_LISTEN, SOCKET_EVENTS_EMIT } from './api/api';
 import { SPECIAL_INSTRUCTIONS_TABLE, SPECIAL_INSTRUCTIONS } from './constants/events';
 import { io, Socket } from "socket.io-client";
-import { codebudConsoleLog, codebudConsoleWarn, jsonStringifyKeepMethods, stringifyIfNotString } from './helperFunctions';
+import { codebudConsoleLog, codebudConsoleWarn, jsonStringifyKeepMethods, stringifyIfNotString } from './helpers/helperFunctions';
 import { asyncStoragePlugin } from './asyncStorage/asyncStorage';
 import { localStoragePlugin } from './localStorage/localStorage';
 import moment from 'moment';
@@ -37,6 +37,7 @@ export class Connector {
   private static _remoteSettingsListenersTable: RemoteSettingsListenersTable = {};
   private static _currentInterceptedReduxActionId = 0;
   private static _currentInterceptedStorageActionId = 0;
+  private static _currentCapturedEventId = 0;
   private _apiKey: string;
   private _instructionsTable: InstructionsTable = {};
   private _onEventUsersCustomCallback: OnEventUsersCustomCallback;
@@ -119,7 +120,9 @@ export class Connector {
 
     try {
       const correspondingInstructionsTable = event.eventType === "default" ? this._instructionsTable: SPECIAL_INSTRUCTIONS_TABLE;
-      if (!correspondingInstructionsTable[event.instructionId])
+      // @ts-ignore
+      const correspondingInstruction: Instruction = correspondingInstructionsTable[event.instructionId];
+      if (!correspondingInstruction)
         throw new EventHandleError(event, `No instruction with id ${event.instructionId} found.`);
 
       event.args = event.args ?? [];
@@ -135,12 +138,12 @@ export class Connector {
 
       this.serveAllExternalListenersWithNewEvent(event);
 
-      if (event.args.length !== correspondingInstructionsTable[event.instructionId].handler.length)
-        throw new EventHandleError(event, `Instruction handler takes ${correspondingInstructionsTable[event.instructionId].handler.length} args, but ${event.args.length} were passed.`);
+      if (event.args.length !== correspondingInstruction.handler.length)
+        throw new EventHandleError(event, `Instruction handler takes ${correspondingInstruction.handler.length} args, but ${event.args.length} were passed.`);
 
       this._socket.emit(SOCKET_EVENTS_EMIT.EXECUTING_EVENT, event.id);
 
-      let result = await correspondingInstructionsTable[event.instructionId].handler(...event.args);
+      let result = await correspondingInstruction.handler(...event.args);
 
       if (event.instructionId === "condition" && this._lastEventLog?.result) {
         const { param, equalsTo } = event.args[0];
@@ -390,7 +393,7 @@ export class Connector {
   }
 
   // AsyncStorage / localStorage
-  // (used in asyncStoragePlugin, binded context)
+  // used in asyncStoragePlugin & localStoragePlugin, (binded context)
   private _handleInterceptedStorageAction(action: string, data?: any) {
     if (this._socket.connected) {
       const timestamp = moment().valueOf();
@@ -426,7 +429,17 @@ export class Connector {
     this._untrackLocalStorage = controlFunctions.untrackLocalStorage;
   }
 
-  // Метод для "чистки" данных нашего SDK
+  public captureEvent(title: string, data: any) {
+    if (this._socket.connected) {
+      const timestamp = moment().valueOf();
+      const capturedEventId = Connector._currentCapturedEventId++;
+
+      const encryptedData = this._encryptData({timestamp, capturedEventId: `UCE_${capturedEventId}`, title, data});
+      this._socket?.emit(SOCKET_EVENTS_EMIT.CAPTURE_EVENT, encryptedData);
+    }
+  }
+
+  // Метод для "чистки" данных нашего пакета
   public disconnect() {
     this._socket.disconnect();
     this._apiKey = "";
