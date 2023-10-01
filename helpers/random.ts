@@ -28,3 +28,7 @@ export const getId = function(length = 8) {
   existing.push(result);
   return result;
 };
+
+export const getRandomInt = (max: number) => {
+  return Math.floor(Math.random() * Math.floor(max));
+}

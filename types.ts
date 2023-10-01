@@ -74,10 +74,20 @@ type InstructionPublicFields = {
   prototype?: InstructionPrototype;
   parametersDescription?: {[key: string]: ParamType};
   description?: string;
+  _groupId?: string;
+  _groupDescription?: string;
+  _groupColor?: string;
 }
 
 export type Instruction = InstructionPublicFields & {
   handler: (...args: any[]) => any;
+};
+
+export type InstructionGroup = {
+  groupId: string;
+  groupDescription?: string;
+  groupColor?: string;
+  groupInstructions: Instruction[];
 };
 
 export type InstructionsTable = {[key: string]: Instruction};

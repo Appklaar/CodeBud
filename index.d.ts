@@ -13,8 +13,9 @@ declare module '@appklaar/codebud' {
   
   export type InterceptedRequest = {
     method: string;
-    body: ObjectT<string> | undefined;
+    body: ObjectT<any> | undefined;
     url: string;
+    requestHeaders?: ObjectT<any> | undefined;
   };
   
   export type InterceptedResponse = {
@@ -54,10 +55,20 @@ declare module '@appklaar/codebud' {
     prototype?: InstructionPrototype;
     parametersDescription?: {[key: string]: ParamType};
     description?: string;
+    _groupId?: string;
+    _groupDescription?: string;
+    _groupColor?: string;
   }
   
   export type Instruction = InstructionPublicFields & {
     handler: (...args: any[]) => any;
+  };
+
+  export type InstructionGroup = {
+    groupId: string;
+    groupDescription?: string;
+    groupColor?: string;
+    groupInstructions: Instruction[];
   };
   
   export type InstructionsTable = {[key: string]: Instruction};
@@ -109,10 +120,10 @@ declare module '@appklaar/codebud' {
     /**
      * Initialize the module.
      * @param {String} apiKey The api key of yours.
-     * @param {Instruction[]} instructions Instructions that will be available from remote testing panel.
+     * @param {(Instruction | InstructionGroup)[]} instructions Instructions that will be available from remote testing panel.
      * @param {PackageConfig | undefined} config Package config (if needed)
      */
-    init: (apiKey: string, instructions: Instruction[], config?: PackageConfig) => void;
+    init: (apiKey: string, instructions: (Instruction | InstructionGroup)[], config?: PackageConfig) => void;
     /**
      * Set custom callback that will be called on every action.
      * @param {OnEventUsersCustomCallback} usersCustomCallback Callback.

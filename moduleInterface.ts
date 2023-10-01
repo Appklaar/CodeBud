@@ -1,5 +1,5 @@
 import { Connector } from './Connector';
-import { OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettings, PackageConfig, Instruction } from './types';
+import { OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettings, PackageConfig, Instruction, InstructionGroup } from './types';
 import { ModuleState } from './States';
 
 export interface AppKlaarSdk {
@@ -10,10 +10,10 @@ export interface AppKlaarSdk {
   /**
    * Initialize the module.
    * @param {String} apiKey The api key of yours.
-   * @param {Instruction[]} instructions Instructions that will be available from remote testing panel.
+   * @param {(Instruction | InstructionGroup)[]} instructions Instructions that will be available from remote testing panel.
    * @param {PackageConfig | undefined} config Package config (if needed)
    */
-  init: (apiKey: string, instructions: Instruction[], config?: PackageConfig) => void;
+  init: (apiKey: string, instructions: (Instruction | InstructionGroup)[], config?: PackageConfig) => void;
   /**
    * Set custom callback that will be called on every action.
    * @param {OnEventUsersCustomCallback} usersCustomCallback Callback.

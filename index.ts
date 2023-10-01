@@ -1,13 +1,14 @@
 import { Connector } from './Connector';
-import { OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettings } from './types';
+import { Instruction, OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettings } from './types';
 import { MODULE_STATES } from './States';
 import { EXISTING_SPECIAL_INSTRUCTION_IDS } from './constants/events';
 import { validateApiKey } from './constants/regex';
 import { AppKlaarSdk as ModuleInterface } from './moduleInterface';
 import { CONFIG } from './config';
 import { codebudConsoleWarn } from './helpers/helperFunctions';
+import { prepareInstructionsFromGroup } from './helpers/instructionsHelpers';
 
-export type { Instruction } from './types';
+export type { Instruction, InstructionGroup } from './types';
 
 export const CodeBud: ModuleInterface = {
   _apiKey : null,
@@ -27,11 +28,22 @@ export const CodeBud: ModuleInterface = {
       return;
     }
 
+    // Из переданного массива инструкций и групп инструкций формируется чистый массив инструкций
+    const processedInstructions: Instruction[] = [];
+
+    for (let el of instructions) {
+      if ("groupId" in el) { // el is InstructionGroup
+        processedInstructions.push(...prepareInstructionsFromGroup(el));
+      } else { // el is Instruction
+        processedInstructions.push(el);
+      }
+    }
+
     // Валидация инструкций
-    // В т.ч. проверка на коллизии id(шников) среди переданных инструкций
+    // В т.ч. проверка на коллизии id(шников)
     const instructionIds = new Set<string>();
     const instructionPrototypes = new Set<string>();
-    for (let el of instructions) {
+    for (let el of processedInstructions) {
       if (EXISTING_SPECIAL_INSTRUCTION_IDS.has(el.id as any)) {
         codebudConsoleWarn(`Instruction id: ${el.id} is reserved for special instruction. You should change it for something else.`);
         this._currentState = "INVALID_PARAMETERS";
@@ -67,7 +79,7 @@ export const CodeBud: ModuleInterface = {
     }
 
     this._apiKey = apiKey;
-    this._connector = new Connector(apiKey, instructions, (event) => this._onEventUsersCustomCallback(event), config);
+    this._connector = new Connector(apiKey, processedInstructions, (event) => this._onEventUsersCustomCallback(event), config);
     this._currentState = "WORKING";
   },
 
