@@ -9,8 +9,6 @@ import {
   ScenarioLog,
   EventListenersTable,
   RemoteSettings,
-  RefreshRemoteSettingsCallback,
-  RemoteSettingsListenersTable,
   PackageConfig,
   NetworkInterceptorInstance,
   NetworkInterceptorOnRequestPayload,
@@ -18,27 +16,31 @@ import {
   AdminConnectedData,
   InterceptedReduxAction,
   InterceptedReduxActionPreparedData,
-  InterceptedStorageActionPreparedData
+  InterceptedStorageActionPreparedData,
+  ProjectInfo,
+  ObjectT
 } from './types';
 import { CONFIG } from './config';
 import { EventHandleError, ScenarioHandleError } from './Errors';
-import { api, SOCKET_EVENTS_LISTEN, SOCKET_EVENTS_EMIT } from './api/api';
+import { SOCKET_EVENTS_LISTEN, SOCKET_EVENTS_EMIT } from './api/api';
 import { SPECIAL_INSTRUCTIONS_TABLE, SPECIAL_INSTRUCTIONS } from './constants/events';
 import { io, Socket } from "socket.io-client";
 import { codebudConsoleLog, codebudConsoleWarn, jsonStringifyKeepMethods, stringifyIfNotString } from './helpers/helperFunctions';
+import { getProcessEnv } from './helpers/environment';
+import { getOS } from './helpers/os';
+import { remoteSettingsService } from './services/remoteSettingsService';
 import { asyncStoragePlugin } from './asyncStorage/asyncStorage';
 import { localStoragePlugin } from './localStorage/localStorage';
 import moment from 'moment';
 
 export class Connector {
   private static _currentInstanceId = 0;
-  private static _remoteSettings: RemoteSettings | null = null;
   private static _eventListenersTable: EventListenersTable = {};
-  private static _remoteSettingsListenersTable: RemoteSettingsListenersTable = {};
   private static _currentInterceptedReduxActionId = 0;
   private static _currentInterceptedStorageActionId = 0;
   private static _currentCapturedEventId = 0;
   private _apiKey: string;
+  private _projectInfo: ProjectInfo | null = null;
   private _instructionsTable: InstructionsTable = {};
   private _onEventUsersCustomCallback: OnEventUsersCustomCallback;
   private _networkInterceptor: NetworkInterceptorInstance | null = null;
@@ -73,12 +75,18 @@ export class Connector {
     delete Connector._eventListenersTable[key];
   };
 
-  public static addRemoteSettingsListener(key: string, handler: (r: RemoteSettings) => any) {
-    Connector._remoteSettingsListenersTable[key] = handler;
-  };
+  private _prepareEnvironmentInfo(): ObjectT<any> {
+    try {
+      const envInfo = getProcessEnv();
+      const osInfo = getOS();
 
-  public static removeRemoteSettingsListener(key: string) {
-    delete Connector._remoteSettingsListenersTable[key];
+      return {
+        ...envInfo,
+        ...osInfo
+      };
+    } catch (e) {
+      return {};
+    }
   };
 
   private _encryptData(json: any) {
@@ -226,24 +234,6 @@ export class Connector {
     }
   }
 
-  public async refreshRemoteSettings(callbackFn?: RefreshRemoteSettingsCallback) {
-    try {
-      const remoteSettings = await api.getRemoteSettingsGet(this._apiKey)
-      .then((response) => {
-        if (response.ok && response.data) {
-          return response.data?.remoteSettings
-        } else {
-          throw new Error("Response returned an error");
-        }
-      });
-
-      Connector._remoteSettings = remoteSettings;
-      callbackFn && callbackFn(remoteSettings);
-    } catch (e) {
-      codebudConsoleWarn("Error while trying to fetch remote settings", e);
-    }
-  }
-
   private async _setupNetworkMonitor(config: PackageConfig) {
     this._networkInterceptor = new config.Interceptor({
       onRequest: ({ request, requestId }: NetworkInterceptorOnRequestPayload) => {
@@ -278,9 +268,14 @@ export class Connector {
     if (config?.EncryptionPlugin) {
       this._encryption = new config.EncryptionPlugin();
     }
+    if (config?.projectInfo) {
+      this._projectInfo = config.projectInfo;
+    }
 
     this._connectionInfoPacket = {
       apiKey,
+      projectId: this._projectInfo?.projectId,
+      environmentInfo: this._prepareEnvironmentInfo(),
       clientType: "CLIENT",
       publicKey: this._encryption?.publicKey,
       availableInstructions: this._getInstructionsPublicFields(instructions),
@@ -300,8 +295,6 @@ export class Connector {
     if (config?.ReactNativePlugin) {
       this._setupRN(config);
     }
-
-    this.refreshRemoteSettings();
 
     this._socket.on(SOCKET_EVENTS_LISTEN.CONNECT, () => {
       codebudConsoleLog('Socket connected:', this._socket.connected);
@@ -328,9 +321,7 @@ export class Connector {
     });
 
     this._socket.on(SOCKET_EVENTS_LISTEN.SAVE_NEW_REMOTE_SETTINGS, (r: RemoteSettings) => {
-      Connector._remoteSettings = r;
-      for (const key of Object.keys(Connector._remoteSettingsListenersTable))
-        Connector._remoteSettingsListenersTable[key](r);
+      remoteSettingsService.onGotNewRemoteSettings(r);
     });
 
     this._socket.on(SOCKET_EVENTS_LISTEN.CONNECT_ERROR, (err) => {
@@ -388,10 +379,6 @@ export class Connector {
     }
   }
 
-  public static get remoteSettings(): RemoteSettings | null {
-    return Connector._remoteSettings;
-  }
-
   // AsyncStorage / localStorage
   // used in asyncStoragePlugin & localStoragePlugin, (binded context)
   private _handleInterceptedStorageAction(action: string, data?: any) {
@@ -443,6 +430,7 @@ export class Connector {
   public disconnect() {
     this._socket.disconnect();
     this._apiKey = "";
+    this._projectInfo = null;
     this._instructionsTable = {};
     this._onEventUsersCustomCallback = () => {};
     this._lastEventLog = undefined;
@@ -468,8 +456,6 @@ export class Connector {
     
     // Think about it later
     Connector.lastEvent = null;
-    Connector._remoteSettings = null;
     Connector._eventListenersTable = {};
-    Connector._remoteSettingsListenersTable = {};
   }
 }

@@ -1,10 +1,16 @@
 declare module '@appklaar/codebud' {
   export type ObjectT<T> = {[key: string]: T};
 
+  export type ProjectInfo = {
+    projectId: string;
+  };
+
   export type PackageConfig = {
     Interceptor?: any;
     EncryptionPlugin?: any;
     ReactNativePlugin?: any;
+    projectInfo?: ProjectInfo;
+    remoteSettingsAutoUpdateInterval?: number;
   };
   
   export type NetworkInterceptorInstance = {

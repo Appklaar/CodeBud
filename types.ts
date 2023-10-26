@@ -2,10 +2,17 @@ import { EventHandleError, ScenarioHandleError } from "./Errors";
 
 export type ObjectT<T> = {[key: string]: T};
 
+export type ProjectInfo = {
+  projectId: string;
+};
+
 export type PackageConfig = {
+  mode?: "dev" | "prod";
   Interceptor?: any;
   EncryptionPlugin?: any;
   ReactNativePlugin?: any;
+  projectInfo?: ProjectInfo;
+  remoteSettingsAutoUpdateInterval?: number;
 };
 
 export type NetworkInterceptorInstance = {
@@ -109,6 +116,8 @@ export type ClientType = "CLIENT" | "ADMIN_PANEL";
 
 export type ConnectionInfoPacket = {
   apiKey: string; 
+  projectId?: string;
+  environmentInfo: ObjectT<any>;
   clientType: ClientType;
   publicKey?: Uint8Array;
   availableInstructions: InstructionPublicFields[];
@@ -162,5 +171,9 @@ export type RemoteSettingsListenersTable = ListenersTable<RemoteSettings>;
 export type GetRemoteSettingsResponse = {
   remoteSettings: RemoteSettings 
 } & ErrorResponse;
+
+export type GetRemoteSettingsRequest = {
+  projectId: string;
+};
 
 export type RefreshRemoteSettingsCallback = (r: RemoteSettings) => void;

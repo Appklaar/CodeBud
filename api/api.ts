@@ -1,6 +1,7 @@
 import { create } from "apisauce";
 import { CONFIG } from './../config';
 import { 
+  GetRemoteSettingsRequest,
   GetRemoteSettingsResponse
 } from "./../types";
 
@@ -36,24 +37,26 @@ const sauce = create({
   headers: { Accept: "application/json" },
 });
 
-// Creates an authorized instance of our API using the configuration,
-// (puts API_KEY into headers)
-const createSauceAuthorized = (apiKey: string) => {
-  return create({
-    baseURL: CONFIG.BASE_URL,
-    headers: {
-      Accept: 'application/json',
-      Authorization: apiKey
-    },
-  });
-}
+const sauceAuthorizedApiKey = create({
+  baseURL: CONFIG.BASE_URL,
+  headers: {
+    Accept: 'application/json'
+  },
+});
+
+// Updates sauceAuthorizedApiKey instance (puts new ApiKey into headers)
+const updateAuthorizationHeaderWithApiKey = (apiKey: string) => {
+  sauceAuthorizedApiKey.setHeader('Authorization', apiKey);
+};
 
 const api = {
   sauce,
-  getRemoteSettingsGet: function (apiKey: string) {
-    const sauceAuthorized = createSauceAuthorized(apiKey);
-    return sauceAuthorized.get<GetRemoteSettingsResponse>(`/client/remotesettings`);
-  },
+  getRemoteSettingsGet: (params: GetRemoteSettingsRequest) => sauceAuthorizedApiKey.get<GetRemoteSettingsResponse>(`/project/${params.projectId}/remotesettings`)
 };
 
-export { api, SOCKET_EVENTS_LISTEN, SOCKET_EVENTS_EMIT };
+export { 
+  api, 
+  updateAuthorizationHeaderWithApiKey,
+  SOCKET_EVENTS_LISTEN, 
+  SOCKET_EVENTS_EMIT 
+};

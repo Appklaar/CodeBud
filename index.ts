@@ -7,6 +7,8 @@ import { AppKlaarSdk as ModuleInterface } from './moduleInterface';
 import { CONFIG } from './config';
 import { codebudConsoleWarn } from './helpers/helperFunctions';
 import { prepareInstructionsFromGroup } from './helpers/instructionsHelpers';
+import { updateAuthorizationHeaderWithApiKey } from './api/api';
+import { remoteSettingsService } from './services/remoteSettingsService';
 
 export type { Instruction, InstructionGroup } from './types';
 
@@ -79,8 +81,17 @@ export const CodeBud: ModuleInterface = {
     }
 
     this._apiKey = apiKey;
-    this._connector = new Connector(apiKey, processedInstructions, (event) => this._onEventUsersCustomCallback(event), config);
-    this._currentState = "WORKING";
+    updateAuthorizationHeaderWithApiKey(this._apiKey);
+    if (config?.projectInfo) {
+      remoteSettingsService.init(config.projectInfo.projectId, config.remoteSettingsAutoUpdateInterval);
+    }
+
+    if (config?.mode === "prod") {
+      this._currentState = "WORKING_PRODUCTION";
+    } else {
+      this._connector = new Connector(apiKey, processedInstructions, (event) => this._onEventUsersCustomCallback(event), config);
+      this._currentState = "WORKING";
+    }
   },
 
   onEvent(cb: OnEventUsersCustomCallback) {
@@ -96,17 +107,11 @@ export const CodeBud: ModuleInterface = {
   },
 
   get remoteSettings(): RemoteSettings | null {
-    if (this._connector)
-      return Connector.remoteSettings;
-
-    return null;
+    return remoteSettingsService.remoteSettings;
   },
 
   async refreshRemoteSettings(callbackFn?: RefreshRemoteSettingsCallback) {
-    if (this._connector)
-      this._connector.refreshRemoteSettings(callbackFn);
-    else 
-      codebudConsoleWarn(`${CONFIG.PRODUCT_NAME} not initiated.`);
+    remoteSettingsService.refreshRemoteSettings(callbackFn);
   },
 
   createReduxStoreChangeHandler(store, selectFn, batchingTimeMs = 500) {
@@ -167,7 +172,9 @@ export const CodeBud: ModuleInterface = {
   disconnect() {
     this._connector && this._connector.disconnect();
     this._connector = null;
+    remoteSettingsService.clear();
     this._apiKey = null;
+    updateAuthorizationHeaderWithApiKey("");
     this._currentState = "NOT_INITIATED";
     this._onEventUsersCustomCallback = () => {};
   }

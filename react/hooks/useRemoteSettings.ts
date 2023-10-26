@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { RemoteSettings } from '../../types';
-import { Connector } from './../../Connector';
+import { remoteSettingsService } from "./../../services/remoteSettingsService";
 import { getId } from './../../helpers/random';
 
 export const useRemoteSettings = (): RemoteSettings | null => {
-  const [remoteSettings, setRemoteSettings] = useState<RemoteSettings | null>(Connector.remoteSettings);
+  const [remoteSettings, setRemoteSettings] = useState<RemoteSettings | null>(remoteSettingsService.remoteSettings);
 
   // ComponentDidMount
   useEffect(() => {
@@ -14,11 +14,11 @@ export const useRemoteSettings = (): RemoteSettings | null => {
       setRemoteSettings(r);
     };
 
-    Connector.addRemoteSettingsListener(listenerKey, innerHandler);
+    remoteSettingsService.addRemoteSettingsListener(listenerKey, innerHandler);
     
     // ComponentWillUnmount
     return () => {
-      Connector.removeRemoteSettingsListener(listenerKey);
+      remoteSettingsService.removeRemoteSettingsListener(listenerKey);
     };
   }, []);
 
