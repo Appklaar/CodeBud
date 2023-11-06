@@ -67,10 +67,9 @@ class RemoteSettingsService {
 
       this._projectId = projectId;
 
+      this.refreshRemoteSettings();
       if (autoUpdateInterval !== undefined)
         this._autoUpdateTimer = setInterval(() => this.refreshRemoteSettings(), autoUpdateInterval);
-      else
-        this.refreshRemoteSettings();
     } catch (e) {
       codebudConsoleWarn("Remote settings service cannot be initiated: ", e);
     }

@@ -14,7 +14,7 @@ const CONFIG_INNER = {
   },
   MAIN_SOCKET_ADDRESS: {
     "PRODUCTION": "https://unitap.online",
-    "DEVELOPMENT": "http://192.168.0.11:3000"
+    "DEVELOPMENT": "http://192.168.0.14:3000"
   },
   SOCKET_PATH: {
     "PRODUCTION": "/connect/socket.io",

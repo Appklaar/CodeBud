@@ -5,7 +5,10 @@ declare module '@appklaar/codebud' {
     projectId: string;
   };
 
+  export type PackageMode = "dev" | "prod";
+
   export type PackageConfig = {
+    mode?: PackageMode;
     Interceptor?: any;
     EncryptionPlugin?: any;
     ReactNativePlugin?: any;

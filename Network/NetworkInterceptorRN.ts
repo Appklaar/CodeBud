@@ -3,6 +3,7 @@ import { startNetworkLogging, stopNetworkLogging, clearRequests } from "./../rn"
 import { NetworkInterceptorCallbacksTable } from '../types';
 import { CONFIG } from './../config';
 import { codebudConsoleLog } from '../helpers/helperFunctions';
+import { shouldProceedIntercepted } from './helpers';
 
 class NetworkInterceptorRN extends NetworkInterceptorApi {
   protected async formatRequest(data: any) {
@@ -53,13 +54,15 @@ class NetworkInterceptorRN extends NetworkInterceptorApi {
       ignoredHosts: CONFIG.NETWORK_INTERCEPTOR.FILTER_INNER_REQUESTS ? [CONFIG.DOMAIN] : undefined,
       onRequest: async (data: any) => {
         try {
-          const formattedRequest = await this.formatRequest(data);
-          const formattedResponse = await this.formatResponse(data);
-          callbacksTable.onResponse({
-            request: formattedRequest,
-            response: formattedResponse,
-            requestId: data.id
-          });
+          if (shouldProceedIntercepted(data.url)) {
+            const formattedRequest = await this.formatRequest(data);
+            const formattedResponse = await this.formatResponse(data);
+            callbacksTable.onResponse({
+              request: formattedRequest,
+              response: formattedResponse,
+              requestId: data.id
+            });
+          }
         } catch (e) {
           codebudConsoleLog(e);
         }

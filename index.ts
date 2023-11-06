@@ -15,6 +15,7 @@ export type { Instruction, InstructionGroup } from './types';
 export const CodeBud: ModuleInterface = {
   _apiKey : null,
   _connector: null,
+  _mode: "dev",
   _currentState: "NOT_INITIATED",
   _onEventUsersCustomCallback: () => {},
 
@@ -87,8 +88,10 @@ export const CodeBud: ModuleInterface = {
     }
 
     if (config?.mode === "prod") {
+      this._mode = "prod";
       this._currentState = "WORKING_PRODUCTION";
     } else {
+      this._mode = "dev";
       this._connector = new Connector(apiKey, processedInstructions, (event) => this._onEventUsersCustomCallback(event), config);
       this._currentState = "WORKING";
     }
@@ -121,7 +124,9 @@ export const CodeBud: ModuleInterface = {
 
       return this._connector.createReduxStoreChangeHandler(store, selectFn, batchingTimeMs);
     } catch (e) {
-      codebudConsoleWarn(e);
+      if (this._mode === "dev")
+        codebudConsoleWarn(e);
+
       return () => {};
     }
   },
@@ -143,7 +148,8 @@ export const CodeBud: ModuleInterface = {
 
       return this._connector.enableAsyncStorageMonitor(asyncStorage, ignoreKeys, batchingTimeMs);
     } catch (e) {
-      codebudConsoleWarn(e);
+      if (this._mode === "dev")
+        codebudConsoleWarn(e);
     }
   },
 
@@ -154,7 +160,8 @@ export const CodeBud: ModuleInterface = {
 
       return this._connector.enableLocalStorageMonitor(localStorage, ignoreKeys, batchingTimeMs);
     } catch (e) {
-      codebudConsoleWarn(e);
+      if (this._mode === "dev")
+        codebudConsoleWarn(e);
     }
   },
 
@@ -165,11 +172,13 @@ export const CodeBud: ModuleInterface = {
 
       return this._connector.captureEvent(title, data);
     } catch (e) {
-      codebudConsoleWarn(e);
+      if (this._mode === "dev")
+        codebudConsoleWarn(e);
     }
   },
  
   disconnect() {
+    this._mode = "dev";
     this._connector && this._connector.disconnect();
     this._connector = null;
     remoteSettingsService.clear();

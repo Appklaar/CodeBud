@@ -6,8 +6,10 @@ export type ProjectInfo = {
   projectId: string;
 };
 
+export type PackageMode = "dev" | "prod";
+
 export type PackageConfig = {
-  mode?: "dev" | "prod";
+  mode?: PackageMode;
   Interceptor?: any;
   EncryptionPlugin?: any;
   ReactNativePlugin?: any;

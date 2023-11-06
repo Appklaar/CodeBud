@@ -1,10 +1,11 @@
 import { Connector } from './Connector';
-import { OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettings, PackageConfig, Instruction, InstructionGroup } from './types';
+import { OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettings, PackageConfig, Instruction, InstructionGroup, PackageMode } from './types';
 import { ModuleState } from './States';
 
 export interface AppKlaarSdk {
   _apiKey: null | string;
   _connector: null | Connector;
+  _mode: PackageMode;
   _currentState: ModuleState;
   _onEventUsersCustomCallback: OnEventUsersCustomCallback;
   /**
