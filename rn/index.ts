@@ -1,4 +1,4 @@
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { StartNetworkLoggingOptions } from './types';
 import logger from './loggerSingleton';
 
@@ -32,5 +32,19 @@ export const ReactNativePlugin = {
         appState = nextAppState;
       },
     );
+
+    // Returns unsubscribe method
+    return subscription.remove;
+  },
+  getOS: () => {
+    return { OS: Platform.OS };
+  },
+  getPlatformInfo: () => {
+    return {
+      ...Platform.constants,
+      PlatformVersion: Platform.Version,
+      isTV: Platform.isTV,
+      isTesting: Platform.isTesting
+    };
   }
 }

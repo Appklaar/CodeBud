@@ -43,14 +43,46 @@ export const emptyMiddleware = () => next => action => {
   return next(action);
 }
 
-export const jsonStringifyKeepMethods = (data: ObjectT<any>) => {
+export const getFormDataMeta = (fData: FormData) => {
+  try {
+    const fDataMeta: {[key: string]: any} = {};
+
+    fData.forEach((value, key) => {
+      if (value instanceof File) { 
+        fDataMeta[key] = {
+          "lastModified": value.lastModified,
+          // @ts-ignore
+          "lastModifiedDate": value.lastModifiedDate,
+          "name": value.name,
+          "size": value.size,
+          "type": value.type,
+          "webkitRelativePath": value.webkitRelativePath
+        }; 
+      } else {
+        fDataMeta[key] = value;
+      }
+    });
+
+    return fDataMeta;
+  } catch (e) {
+    return {};
+  }
+}
+
+// Custom JSON.stringify wrapper that keeps as much metadata as possible
+export const jsonStringifyKeepMeta = (data: ObjectT<any>) => {
   return JSON.stringify(
     data,
     function(key, value) {
-      if (typeof value === 'function') {
-        return "Function (...)";
-      } else {
-        return value;
+      const type = typeof value;
+
+      switch (type) {
+        case "object":
+          return (value instanceof FormData) ? getFormDataMeta(value) : value;
+        case "function":
+          return "Function (...)";
+        default:
+          return value;
       }
     }
   );

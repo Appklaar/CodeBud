@@ -25,7 +25,7 @@ import { EventHandleError, ScenarioHandleError } from './Errors';
 import { SOCKET_EVENTS_LISTEN, SOCKET_EVENTS_EMIT } from './api/api';
 import { SPECIAL_INSTRUCTIONS_TABLE, SPECIAL_INSTRUCTIONS } from './constants/events';
 import { io, Socket } from "socket.io-client";
-import { codebudConsoleLog, codebudConsoleWarn, jsonStringifyKeepMethods, stringifyIfNotString } from './helpers/helperFunctions';
+import { codebudConsoleLog, codebudConsoleWarn, jsonStringifyKeepMeta, stringifyIfNotString } from './helpers/helperFunctions';
 import { getProcessEnv } from './helpers/environment';
 import { getOS } from './helpers/os';
 import { remoteSettingsService } from './services/remoteSettingsService';
@@ -63,6 +63,7 @@ export class Connector {
   private _storageActionsBatchingTimeMs: number = 500;
   private _sendStorageActionsBatchingTimer: NodeJS.Timeout | null = null;
   private _currentStorageActionsBatch: InterceptedStorageActionPreparedData[] = [];
+  private _unsubscribeFromAppStateChanges: (() => void) | undefined;
 
   public static lastEvent: RemoteEvent | null = null;
   public readonly instanceId: number;
@@ -75,14 +76,16 @@ export class Connector {
     delete Connector._eventListenersTable[key];
   };
 
-  private _prepareEnvironmentInfo(): ObjectT<any> {
+  private _prepareEnvironmentInfo(config?: PackageConfig): ObjectT<any> {
     try {
       const envInfo = getProcessEnv();
-      const osInfo = getOS();
+      const osInfo = config?.ReactNativePlugin ? config.ReactNativePlugin.getOS() : getOS();
+      const additionalInfo = config?.ReactNativePlugin ? config.ReactNativePlugin.getPlatformInfo() : {};
 
       return {
         ...envInfo,
-        ...osInfo
+        ...osInfo,
+        ...additionalInfo
       };
     } catch (e) {
       return {};
@@ -91,7 +94,7 @@ export class Connector {
 
   private _encryptData(json: any) {
     if (!this._encryption)
-      return jsonStringifyKeepMethods(json);
+      return jsonStringifyKeepMeta(json);
 
     return this._encryption.encryptData(json);
   };
@@ -252,7 +255,7 @@ export class Connector {
   };
 
   private async _setupRN(config: PackageConfig) {
-    config.ReactNativePlugin.subscribeForAppStateChanges(
+    this._unsubscribeFromAppStateChanges = config.ReactNativePlugin.subscribeForAppStateChanges(
       () => this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_MOBILE_APP_STATE, {foreground: true}), 
       () => this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_MOBILE_APP_STATE, {foreground: false}),
     );
@@ -275,7 +278,7 @@ export class Connector {
     this._connectionInfoPacket = {
       apiKey,
       projectId: this._projectInfo?.projectId,
-      environmentInfo: this._prepareEnvironmentInfo(),
+      environmentInfo: this._prepareEnvironmentInfo(config),
       clientType: "CLIENT",
       publicKey: this._encryption?.publicKey,
       availableInstructions: this._getInstructionsPublicFields(instructions),
@@ -453,6 +456,8 @@ export class Connector {
       this._untrackLocalStorage && this._untrackLocalStorage();
       this._localStorageHandler = null;
     }
+
+    this._unsubscribeFromAppStateChanges && this._unsubscribeFromAppStateChanges();
     
     // Think about it later
     Connector.lastEvent = null;

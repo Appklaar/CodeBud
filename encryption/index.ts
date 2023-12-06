@@ -1,6 +1,6 @@
 import { box, randomBytes } from 'tweetnacl';
 import { decodeUTF8, encodeBase64 } from 'tweetnacl-util';
-import { codebudConsoleLog, codebudConsoleWarn, jsonStringifyKeepMethods } from '../helpers/helperFunctions';
+import { codebudConsoleLog, codebudConsoleWarn, jsonStringifyKeepMeta } from '../helpers/helperFunctions';
 
 export class EncryptionPlugin {
   private _keyPair: nacl.BoxKeyPair | null = null;
@@ -17,7 +17,7 @@ export class EncryptionPlugin {
         throw new Error("Shared key not generated");
 
       const nonce = this.newNonce();
-      const messageUint8 = decodeUTF8(jsonStringifyKeepMethods(json));
+      const messageUint8 = decodeUTF8(jsonStringifyKeepMeta(json));
 
       const encrypted = box.after(messageUint8, nonce, this._sharedKey);
 
