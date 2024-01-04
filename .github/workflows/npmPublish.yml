@@ -1,0 +1,8 @@
+name: NPM publish workflow
+on: workflow_dispatch # На какой триггер будет реагировать данный workflow чтобы автоматически запуститься;
+jobs:
+  Prepare-Build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: clear previous build
+        run: echo "Hello world!"
