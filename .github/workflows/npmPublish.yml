@@ -1,8 +1,27 @@
 name: NPM publish workflow
-on: workflow_dispatch # На какой триггер будет реагировать данный workflow чтобы автоматически запуститься;
+on: 
+  workflow_dispatch:
+  push:
+    branches:
+      - 'main'
+    paths-ignore:
+      - '.github/workflows/*' # не запускать воркфлоу при обновлении самих воркфлоу
 jobs:
-  Prepare-Build:
+  Prepare_and_publish:
     runs-on: ubuntu-latest
     steps:
-      - name: clear previous build
-        run: echo "Hello world!"
+      - name: Get repository code
+        uses: actions/checkout@v4
+      - name: Install node modules
+        run: yarn
+      - name: Make build
+        run: yarn build
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          path: build
+          name: codebud-test-wf-build
+      - name: Get build folder
+        uses: actions/download-artifact@v3
+        with:
+          name: codebud-test-wf-build
