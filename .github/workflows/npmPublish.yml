@@ -25,8 +25,11 @@ jobs:
         run: yarn clean
       - name: Make build
         run: yarn build
-      - name: Go to build folder
-        run: cd build
+      - name: Go to build folder & publish new version to NPM
+        run: cd build && npm publish
+        env: 
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
 
       # - name: Increase package version
       #   run: npm version ${{ env.NPM_VERSION }}
@@ -41,7 +44,3 @@ jobs:
       #   uses: actions/download-artifact@v3
       #   with:
       #     name: codebud-build
-      - name: Publish new version to NPM
-        run: npm publish
-        env: 
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
