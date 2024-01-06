@@ -6,24 +6,43 @@ on:
       - 'main'
     paths-ignore:
       - '.github/workflows/*' # не запускать воркфлоу при обновлении самих воркфлоу
+env:
+  NPM_VERSION: patch
+  NODE_VERSION: 18.11.0
 jobs:
-  Prepare_and_publish:
+  Prepare_build:
     runs-on: ubuntu-latest
     steps:
       - name: Get repository code
         uses: actions/checkout@v4
+      - name: Setup .npmrc file to publish to npm
+        uses: actions/setup-node@v3
+        with:
+          node-version: '${{ env.NODE_VERSION }}'
+          registry-url: 'https://registry.npmjs.org'
       - name: Install node modules
         run: yarn
       - name: Clean previous build
         run: yarn clean
       - name: Make build
         run: yarn build
+      - name: Go to build folder
+        run: cd build
+      - name: Increase package version
+        run: npm version ${{ env.NPM_VERSION }}
+
+      - name: Go back
+        run: cd -
       - name: Upload build artifact
         uses: actions/upload-artifact@v3
         with:
           path: build
-          name: codebud-test-wf-build
+          name: codebud-build
       - name: Get build folder
         uses: actions/download-artifact@v3
         with:
-          name: codebud-test-wf-build
+          name: codebud-build
+      # - name: Publish new version to NPM
+      #   run: npm publish
+      #   env: 
+      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
