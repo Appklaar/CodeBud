@@ -7,6 +7,7 @@ on:
     paths-ignore:
       - '.github/workflows/*' # не запускать воркфлоу при обновлении самих воркфлоу
 env:
+  NPM_VERSION_MODIFIER: patch
   NODE_VERSION: 18.11.0
 jobs:
   Prepare_and_publish:
@@ -26,21 +27,6 @@ jobs:
       - name: Make build
         run: yarn build
       - name: Go to build folder & publish new version to NPM
-        run: cd build && npm publish
+        run: cd build && npm version --no-git-tag-version ${{ env.NPM_VERSION_MODIFIER }} && npm publish
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-
-      # - name: Increase package version
-      #   run: npm version ${{ env.NPM_VERSION }}
-      # - name: Go back
-      #   run: cd -
-      # - name: Upload build artifact
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     path: build
-      #     name: codebud-build
-      # - name: Get build folder
-      #   uses: actions/download-artifact@v3
-      #   with:
-      #     name: codebud-build
