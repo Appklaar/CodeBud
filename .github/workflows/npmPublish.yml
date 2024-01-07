@@ -4,8 +4,8 @@ on:
   push:
     branches:
       - 'main'
-    paths-ignore:
-      - '.github/workflows/*' # не запускать воркфлоу при обновлении самих воркфлоу
+    # paths-ignore:
+    #   - '.github/workflows/*' # не запускать воркфлоу при обновлении самих воркфлоу
 env:
   NPM_VERSION_MODIFIER: patch
   NODE_VERSION: 18.11.0
@@ -27,6 +27,6 @@ jobs:
       - name: Make build
         run: yarn build
       - name: Go to build folder & publish new version to NPM
-        run: cd build && npm version --no-git-tag-version ${{ env.NPM_VERSION_MODIFIER }} && npm publish
+        run: cd build && npm version --no-git-tag-version $(npm view @appklaar/codebud@latest version) && npm version --no-git-tag-version ${{ env.NPM_VERSION_MODIFIER }} && npm publish
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
