@@ -4,8 +4,8 @@ on:
   push:
     branches:
       - 'main'
-    # paths-ignore:
-    #   - '.github/workflows/*' # не запускать воркфлоу при обновлении самих воркфлоу
+    paths-ignore:
+      - '.github/workflows/*' # не запускать воркфлоу при обновлении самих воркфлоу
 env:
   NPM_VERSION_MODIFIER: patch
   NODE_VERSION: 18.11.0

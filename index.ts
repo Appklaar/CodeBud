@@ -71,16 +71,6 @@ export const CodeBud: ModuleInterface = {
         instructionPrototypes.add(el.prototype);
     }
 
-    if (!(instructionPrototypes.has("login") && instructionPrototypes.has("logout"))) {
-      if (!instructionPrototypes.has("login"))
-        codebudConsoleWarn(`Login instruction is required. Please, provide at least one instruction with prototype "login"`);
-      if (!instructionPrototypes.has("logout"))
-        codebudConsoleWarn(`Logout instruction is required. Please, provide at least one instruction with prototype "logout"`);
-        
-      this._currentState = "INVALID_PARAMETERS";
-      return;
-    }
-
     this._apiKey = apiKey;
     updateAuthorizationHeaderWithApiKey(this._apiKey);
     if (config?.projectInfo) {
