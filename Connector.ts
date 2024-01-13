@@ -127,7 +127,7 @@ export class Connector {
   };
 
   private async _innerHandleEvent(event: RemoteEvent, isPartOfScenario: boolean = false) {
-    codebudConsoleLog('On event:', event);
+    const startTimestamp = moment().valueOf();
 
     try {
       const correspondingInstructionsTable = event.eventType === "default" ? this._instructionsTable: SPECIAL_INSTRUCTIONS_TABLE;
@@ -138,7 +138,6 @@ export class Connector {
 
       event.args = event.args ?? [];
 
-      const startTimestamp = moment().valueOf();
       if (this._dataToForward && event.args[0]) {
         Object.keys(this._dataToForward).forEach((key) => {
           // @ts-ignore
@@ -184,28 +183,36 @@ export class Connector {
       this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_EVENT_LOG, eventLog);
 
       return eventLog;
-    } catch (error) {
+    } catch (error: EventHandleError | unknown) {
       codebudConsoleLog(`Error while trying to handle event.`, error);
 
       // If current event was part of scenario then throw error so it would be processed inside _innerHandleScenario's catch block
       if (isPartOfScenario)
         throw error;
+
+      const endTimestamp = moment().valueOf();
+      const eventLog: EventLog = {
+        event,
+        ok: false,
+        error,
+        startTimestamp,
+        endTimestamp,
+        elapsedTime: endTimestamp - startTimestamp
+      };
       
-      this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_EVENT_LOG, {event, ok: false, error});
+      this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_EVENT_LOG, eventLog);
     }
   }
 
   private async _innerHandleScenario(scenario: RemoteScenario) {
-    // codebudConsoleLog('On scenario:', scenario);
-
     var eventIndex = 0;
     this._lastEventLog = undefined;
     this._dataToForward = null;
 
+    const startTimestamp = moment().valueOf();
     try {
       this._socket.emit(SOCKET_EVENTS_EMIT.EXECUTING_SCENARIO, scenario.id);
 
-      const startTimestamp = moment().valueOf();
       let executionWasStoppedManually = false;
       for (const event of scenario.events) {
         if (this._shouldStopScenarioExecution) {
@@ -219,8 +226,8 @@ export class Connector {
         }
         eventIndex++;
       }
-      const endTimestamp = moment().valueOf();
 
+      const endTimestamp = moment().valueOf();
       const scenarioLog: ScenarioLog = {
         scenario,
         ok: true,
@@ -232,8 +239,19 @@ export class Connector {
       this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_SCENARIO_LOG, scenarioLog);
     } catch (error) {
       codebudConsoleLog(`Error while trying to handle scenario.`, error);
+
       const scenarioError = new ScenarioHandleError(scenario, scenario.events[eventIndex], "Scenario execution failed.");
-      this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_SCENARIO_LOG, {scenario, ok: false, error: scenarioError});
+      const endTimestamp = moment().valueOf();
+      const scenarioLog: ScenarioLog = {
+        scenario,
+        ok: false,
+        error: scenarioError,
+        startTimestamp,
+        endTimestamp,
+        elapsedTime: endTimestamp - startTimestamp
+      };
+
+      this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_SCENARIO_LOG, scenarioLog);
     }
   }
 

@@ -139,10 +139,10 @@ export type EventLog = {
   event: RemoteEvent;
   ok: boolean;
   result?: any;
-  error?: EventHandleError;
-  startTimestamp?: number;
-  endTimestamp?: number;
-  elapsedTime?: number;
+  error?: EventHandleError | unknown;
+  startTimestamp: number;
+  endTimestamp: number;
+  elapsedTime: number;
 };
 
 export type RemoteScenario = {
@@ -155,9 +155,9 @@ export type ScenarioLog = {
   ok: boolean;
   executionWasStoppedManually?: boolean;
   error?: ScenarioHandleError;
-  startTimestamp?: number;
-  endTimestamp?: number;
-  elapsedTime?: number;
+  startTimestamp: number;
+  endTimestamp: number;
+  elapsedTime: number;
 };
 
 export type ListenersTable<T> = {[key: string]: (data: T) => any};
