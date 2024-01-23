@@ -26,6 +26,11 @@ const CONFIG_INNER = {
       "PRODUCTION": true,
       "DEVELOPMENT": true
     }
+  },
+  PAYLOAD_LIMITS: {
+    MAX_KB_SIZE: 512,
+    MAX_BYTE_SIZE: 524288, // 512 Kb * 1024 (byte / Kb)
+    MIN_STRING_LENGTH_POSSIBLE_OVERLOAD: 131072 // MAX_BYTE_SIZE / 4
   }
 };
 

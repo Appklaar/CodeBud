@@ -1,5 +1,6 @@
 import { CONFIG } from "../config";
 import { ObjectT } from "../types";
+import { payloadSizeValidator } from "./payloadSizeValidator";
 
 export function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -71,7 +72,7 @@ export const getFormDataMeta = (fData: FormData) => {
 
 // Custom JSON.stringify wrapper that keeps as much metadata as possible
 export const jsonStringifyKeepMeta = (data: ObjectT<any>) => {
-  return JSON.stringify(
+  const dataStringified = JSON.stringify(
     data,
     function(key, value) {
       const type = typeof value;
@@ -86,4 +87,12 @@ export const jsonStringifyKeepMeta = (data: ObjectT<any>) => {
       }
     }
   );
+
+  if (payloadSizeValidator(dataStringified))
+    return dataStringified;
+
+  const message = `Payload data was skipped (${CONFIG.PAYLOAD_LIMITS.MAX_KB_SIZE} Kb limit exceeded)`;
+  codebudConsoleWarn(message);
+  
+  return JSON.stringify({message});
 }
