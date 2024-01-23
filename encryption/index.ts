@@ -11,13 +11,15 @@ export class EncryptionPlugin {
     return randomBytes(box.nonceLength);
   };
 
-  public encryptData(json: any) {
+  public encryptData(json: any): {result: string, ok: boolean} {
     try {
       if (!this._sharedKey)
         throw new Error("Shared key not generated");
 
       const nonce = this.newNonce();
-      const messageUint8 = decodeUTF8(jsonStringifyKeepMeta(json));
+      const jsonStringified = jsonStringifyKeepMeta(json);
+
+      const messageUint8 = decodeUTF8(jsonStringified.result);
 
       const encrypted = box.after(messageUint8, nonce, this._sharedKey);
 
@@ -26,10 +28,10 @@ export class EncryptionPlugin {
       fullMessage.set(encrypted, nonce.length);
 
       const base64FullMessage = encodeBase64(fullMessage);
-      return base64FullMessage;
+      return {result: base64FullMessage, ok: jsonStringified.ok};
     } catch (e) {
       codebudConsoleLog(e);
-      return JSON.stringify({msg: "Data encryption error"});
+      return {result: JSON.stringify({msg: "Data encryption error"}), ok: false};
     }
   };
 

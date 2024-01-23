@@ -71,7 +71,7 @@ export const getFormDataMeta = (fData: FormData) => {
 }
 
 // Custom JSON.stringify wrapper that keeps as much metadata as possible
-export const jsonStringifyKeepMeta = (data: ObjectT<any>) => {
+export const jsonStringifyKeepMeta = (data: ObjectT<any>): {result: string, ok: boolean} => {
   const dataStringified = JSON.stringify(
     data,
     function(key, value) {
@@ -89,10 +89,10 @@ export const jsonStringifyKeepMeta = (data: ObjectT<any>) => {
   );
 
   if (payloadSizeValidator(dataStringified))
-    return dataStringified;
+    return {result: dataStringified, ok: true};
 
   const message = `Payload data was skipped (${CONFIG.PAYLOAD_LIMITS.MAX_KB_SIZE} Kb limit exceeded)`;
   codebudConsoleWarn(message);
-  
-  return JSON.stringify({message});
+
+  return {result: JSON.stringify({message}), ok: false};
 }

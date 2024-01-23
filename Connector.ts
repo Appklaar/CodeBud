@@ -92,7 +92,7 @@ export class Connector {
     }
   };
 
-  private _encryptData(json: any) {
+  private _encryptData(json: any): {result: string, ok: boolean} {
     if (!this._encryption)
       return jsonStringifyKeepMeta(json);
 
@@ -261,13 +261,13 @@ export class Connector {
         // codebudConsoleLog(`Intercepted request ${requestId}`, request);
         const timestamp = moment().valueOf();
         const encryptedData = this._encryptData({request, requestId, timestamp});
-        this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_REQUEST, encryptedData);
+        encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_REQUEST, encryptedData.result);
       },
       onResponse: ({ response, request, requestId }: NetworkInterceptorOnResponsePayload) => {
         // codebudConsoleLog(`Intercepted response ${requestId}`, response);
         const timestamp = moment().valueOf();
         const encryptedData = this._encryptData({response, request, requestId, timestamp});
-        this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_RESPONSE, encryptedData);
+        encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_RESPONSE, encryptedData.result);
       }
     });
   };
@@ -373,7 +373,7 @@ export class Connector {
 
           this._sendReduxStateBatchingTimer = setTimeout(() => {
             const encryptedData = this._encryptData({state: this._currentReduxStateCopy});
-            this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_REDUX_STATE_COPY, encryptedData);
+            encryptedData.ok && this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_REDUX_STATE_COPY, encryptedData.result);
           }, batchingTimeMs);
         }
       }
@@ -387,14 +387,15 @@ export class Connector {
     if (this._socket.connected) {
       const timestamp = moment().valueOf();
       const actionId = Connector._currentInterceptedReduxActionId++;
-      this._currentReduxActionsBatch.push({actionId: `RA_${actionId}`, action, timestamp});
+      const reduxActionData = {actionId: `RA_${actionId}`, action, timestamp};
+      jsonStringifyKeepMeta(reduxActionData).ok && this._currentReduxActionsBatch.push(reduxActionData);
 
       if (this._sendReduxActionsBatchingTimer) 
         clearTimeout(this._sendReduxActionsBatchingTimer);
 
       this._sendReduxActionsBatchingTimer = setTimeout(() => {
         const encryptedData = this._encryptData({actions: this._currentReduxActionsBatch});
-        this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_REDUX_ACTIONS_BATCH, encryptedData);
+        encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_REDUX_ACTIONS_BATCH, encryptedData.result);
         this._currentReduxActionsBatch = [];
       }, batchingTimeMs);
     }
@@ -406,14 +407,15 @@ export class Connector {
     if (this._socket.connected) {
       const timestamp = moment().valueOf();
       const storageActionId = Connector._currentInterceptedStorageActionId++;
-      this._currentStorageActionsBatch.push({storageActionId: `SA_${storageActionId}`, action, data, timestamp});
+      const storageActionData = {storageActionId: `SA_${storageActionId}`, action, data, timestamp};
+      jsonStringifyKeepMeta(storageActionData).ok && this._currentStorageActionsBatch.push(storageActionData);
 
       if (this._sendStorageActionsBatchingTimer) 
         clearTimeout(this._sendStorageActionsBatchingTimer);
 
       this._sendStorageActionsBatchingTimer = setTimeout(() => {
         const encryptedData = this._encryptData({storageActions: this._currentStorageActionsBatch});
-        this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_STORAGE_ACTIONS_BATCH, encryptedData);
+        encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_STORAGE_ACTIONS_BATCH, encryptedData.result);
         this._currentStorageActionsBatch = [];
       }, this._storageActionsBatchingTimeMs);
     }
@@ -443,7 +445,7 @@ export class Connector {
       const capturedEventId = Connector._currentCapturedEventId++;
 
       const encryptedData = this._encryptData({timestamp, capturedEventId: `UCE_${capturedEventId}`, title, data});
-      this._socket?.emit(SOCKET_EVENTS_EMIT.CAPTURE_EVENT, encryptedData);
+      encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.CAPTURE_EVENT, encryptedData.result);
     }
   }
 
