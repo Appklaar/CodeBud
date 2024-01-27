@@ -372,7 +372,7 @@ export class Connector {
             clearTimeout(this._sendReduxStateBatchingTimer);
 
           this._sendReduxStateBatchingTimer = setTimeout(() => {
-            const encryptedData = this._encryptData({state: this._currentReduxStateCopy});
+            const encryptedData = this._encryptData({state: this._currentReduxStateCopy, timestamp: moment().valueOf()});
             encryptedData.ok && this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_REDUX_STATE_COPY, encryptedData.result);
           }, batchingTimeMs);
         }
