@@ -57,7 +57,9 @@ declare module '@appklaar/codebud' {
   
   type InstructionPrototype = "login" | "logout";
   
-  type ParamType = "number" | "string" | "object" | "array" | "boolean";
+  type BaseParamType = "number" | "string" | "object" | "array" | "boolean";
+  type OptionalParamType = `?${BaseParamType}`;
+  type ParamType = BaseParamType | OptionalParamType;
   
   type InstructionPublicFields = {
     id: string;
