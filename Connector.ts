@@ -27,6 +27,7 @@ import { SPECIAL_INSTRUCTIONS_TABLE, SPECIAL_INSTRUCTIONS } from './constants/ev
 import { io, Socket } from "socket.io-client";
 import { codebudConsoleLog, codebudConsoleWarn, jsonStringifyKeepMeta, stringifyIfNotString } from './helpers/helperFunctions';
 import { getProcessEnv } from './helpers/environment';
+import { getBrowserInfo } from './helpers/browserInfo';
 import { getOS } from './helpers/os';
 import { remoteSettingsService } from './services/remoteSettingsService';
 import { asyncStoragePlugin } from './asyncStorage/asyncStorage';
@@ -80,11 +81,13 @@ export class Connector {
     try {
       const envInfo = getProcessEnv();
       const osInfo = config?.ReactNativePlugin ? config.ReactNativePlugin.getOS() : getOS();
+      const browserInfo = getBrowserInfo();
       const additionalInfo = config?.ReactNativePlugin ? config.ReactNativePlugin.getPlatformInfo() : {};
 
       return {
         ...envInfo,
         ...osInfo,
+        ...browserInfo,
         ...additionalInfo
       };
     } catch (e) {
