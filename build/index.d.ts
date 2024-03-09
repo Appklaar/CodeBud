@@ -172,6 +172,13 @@ declare module '@appklaar/codebud' {
      */
     createReduxActionMonitorMiddleware: (batchingTimeMs?: number) => any;
     /**
+     * Function that creates Zustand Store Change Handler, that you can use to subscribe to Store Changes.
+     * @param {SelectFn} selectFn select function that returns part of the store.
+     * @param {number} [batchingTimeMs = 500] batching time of sending new zustand state copy (in ms). Defaults to 500
+     * @returns {Function} Store change handler function.
+     */
+    createZustandStoreChangeHandler: (selectFn: (state: any) => any, batchingTimeMs?: number) => ((state: any, prevState: any) => void);
+    /**
      * Function that enables AsyncStorage monitor.
      * @param {any} asyncStorage your AsyncStorage
      * @param {string[]} [ignoreKeys = []] storage keys that should be ignored. Defaults to empty array.
