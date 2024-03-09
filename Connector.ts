@@ -53,6 +53,7 @@ export class Connector {
   private _sendReduxStateBatchingTimer: NodeJS.Timeout | null = null;
   private _currentReduxStateCopy: any = null;
   private _sendReduxActionsBatchingTimer: NodeJS.Timeout | null = null;
+  private _sendZustandStateBatchingTimer: NodeJS.Timeout | null = null;
   private _currentReduxActionsBatch: InterceptedReduxActionPreparedData[] = [];
   private _encryption: any = null;
   private _asyncStorageHandler: any = null;
@@ -401,6 +402,28 @@ export class Connector {
         encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_REDUX_ACTIONS_BATCH, encryptedData.result);
         this._currentReduxActionsBatch = [];
       }, batchingTimeMs);
+    }
+  }
+
+  public createZustandStoreChangeHandler(selectFn: (state: any) => any, batchingTimeMs: number): (state: any, prevState: any) => void {
+    try {
+      return (state: any, prevState: any) => {
+        const prevStateSelected = selectFn(prevState);
+        const currentStateSelected = selectFn(state);
+
+        if (this._socket.connected && JSON.stringify(prevStateSelected) !== JSON.stringify(currentStateSelected)) {
+          if (this._sendZustandStateBatchingTimer)
+            clearTimeout(this._sendZustandStateBatchingTimer);
+
+          this._sendZustandStateBatchingTimer = setTimeout(() => {
+            const encryptedData = this._encryptData({state: currentStateSelected, timestamp: moment().valueOf()});
+            encryptedData.ok && this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_ZUSTAND_STATE_COPY, encryptedData.result);
+          }, batchingTimeMs);
+        }
+      }
+    } catch (e) {
+      codebudConsoleWarn(`Error while trying to create ZustandStoreChangeHandler`, e);
+      return () => {};
     }
   }
 

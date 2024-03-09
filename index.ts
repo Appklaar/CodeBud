@@ -131,6 +131,20 @@ export const CodeBud: ModuleInterface = {
     }
   },
 
+  createZustandStoreChangeHandler(selectFn, batchingTimeMs = 500) {
+    try {
+      if (!this._connector)
+        throw new Error(`Something went wrong while creating ZustandStoreChangeHandler. Double check that you initialized ${CONFIG.PRODUCT_NAME}`);
+
+      return this._connector.createZustandStoreChangeHandler(selectFn, batchingTimeMs);
+    } catch (e) {
+      if (this._mode === "dev")
+        codebudConsoleWarn(e);
+
+      return () => {};
+    }
+  },
+
   enableAsyncStorageMonitor(asyncStorage, ignoreKeys = [], batchingTimeMs = 500) {
     try {
       if (!this._connector)

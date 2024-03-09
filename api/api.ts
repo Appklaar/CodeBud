@@ -25,6 +25,7 @@ const SOCKET_EVENTS_EMIT = {
   SAVE_SCENARIO_LOG: "saveScenarioLog",
   SAVE_REDUX_STATE_COPY: "saveReduxStateCopy",
   SAVE_REDUX_ACTIONS_BATCH: "saveReduxActionsBatch",
+  SAVE_ZUSTAND_STATE_COPY: "saveZustandStateCopy",
   SAVE_INTERCEPTED_REQUEST: "saveInterceptedRequest",
   SAVE_INTERCEPTED_RESPONSE: "saveInterceptedResponse",
   SAVE_MOBILE_APP_STATE: "saveMobileAppState",
