@@ -7,15 +7,15 @@ const PAYLOAD_LIMIT_MAX_KB_SIZE = 1024;
 const CONFIG_INNER = {
   PRODUCT_NAME: "CodeBud",
   MAX_IDENTICAL_CONSOLE_WARNINGS_IN_A_ROW: 3,
-  DOMAIN: "unitap.online",
-  MAIN_URL: "https://unitap.online",
-  BASE_URL: 'https://unitap.online/api',
+  DOMAIN: "codebud.io",
+  MAIN_URL: "https://codebud.io",
+  BASE_URL: 'https://codebud.io/api/v3',
   DEV: {
     "PRODUCTION": false,
     "DEVELOPMENT": true
   },
   MAIN_SOCKET_ADDRESS: {
-    "PRODUCTION": "https://unitap.online",
+    "PRODUCTION": "https://codebud.io",
     "DEVELOPMENT": "http://192.168.0.14:3000"
   },
   SOCKET_PATH: {

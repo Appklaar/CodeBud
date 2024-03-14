@@ -184,7 +184,8 @@ export class Connector {
         elapsedTime: endTimestamp - startTimestamp
       };
      
-      this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_EVENT_LOG, eventLog);
+      const encryptedData = this._encryptData(eventLog);
+      encryptedData.ok && this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_EVENT_LOG, encryptedData.result);
 
       return eventLog;
     } catch (error: EventHandleError | unknown) {
@@ -204,7 +205,8 @@ export class Connector {
         elapsedTime: endTimestamp - startTimestamp
       };
       
-      this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_EVENT_LOG, eventLog);
+      const encryptedData = this._encryptData(eventLog);
+      encryptedData.ok && this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_EVENT_LOG, encryptedData.result);
     }
   }
 
@@ -240,7 +242,9 @@ export class Connector {
         endTimestamp,
         elapsedTime: endTimestamp - startTimestamp
       };
-      this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_SCENARIO_LOG, scenarioLog);
+
+      const encryptedData = this._encryptData(scenarioLog);
+      encryptedData.ok && this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_SCENARIO_LOG, encryptedData.result);
     } catch (error) {
       codebudConsoleLog(`Error while trying to handle scenario.`, error);
 
@@ -255,7 +259,8 @@ export class Connector {
         elapsedTime: endTimestamp - startTimestamp
       };
 
-      this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_SCENARIO_LOG, scenarioLog);
+      const encryptedData = this._encryptData(scenarioLog);
+      encryptedData.ok && this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_SCENARIO_LOG, encryptedData.result);
     }
   }
 
