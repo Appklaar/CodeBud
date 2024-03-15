@@ -6,6 +6,7 @@ JavaScript package for remote app testing & debugging
 * Remote testing with events and scenarios
 * Network requests monitoring
 * Redux state observer + action monitor
+* Zustand state observer
 * Storage actions monitoring
 * Feature management
 * Built-in temporary mail service
@@ -28,7 +29,7 @@ yarn add @appklaar/codebud
 
 ## Quick Links
 
-* [Graphical User Interface (website)](https://codebud.unitap.online/)
+* [Graphical User Interface (website)](https://codebud.io/)
 * [Documentation](https://appklaar.gitbook.io/codebud/)
 * [Contact us](https://t.me/appklaar)
 
