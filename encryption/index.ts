@@ -29,8 +29,8 @@ export class EncryptionPlugin {
 
       const base64FullMessage = encodeBase64(fullMessage);
       return {result: base64FullMessage, ok: jsonStringified.ok};
-    } catch (e) {
-      codebudConsoleLog(e);
+    } catch (e: any) {
+      codebudConsoleLog(e?.message);
       return {result: JSON.stringify({msg: "Data encryption error"}), ok: false};
     }
   };
