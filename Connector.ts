@@ -465,7 +465,7 @@ export class Connector {
         clearTimeout(this._sendTanStackQueriesDataBatchingTimer);
 
       this._sendTanStackQueriesDataBatchingTimer = setTimeout(() => {
-        const encryptedData = this._encryptData({state: this._currentTanStackQueriesDataCopy, timestamp: moment().valueOf()});
+        const encryptedData = this._encryptData({queriesData: this._currentTanStackQueriesDataCopy, timestamp: moment().valueOf()});
         encryptedData.ok && this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_TANSTACK_QUERIES_DATA_COPY, encryptedData.result);
       }, batchingTimeMs);
     }
