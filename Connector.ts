@@ -1,25 +1,4 @@
-import { 
-  Instruction, 
-  InstructionsTable,
-  RemoteEvent,
-  OnEventUsersCustomCallback,
-  ConnectionInfoPacket,
-  EventLog,
-  RemoteScenario,
-  ScenarioLog,
-  EventListenersTable,
-  RemoteSettings,
-  PackageConfig,
-  NetworkInterceptorInstance,
-  NetworkInterceptorOnRequestPayload,
-  NetworkInterceptorOnResponsePayload,
-  AdminConnectedData,
-  InterceptedReduxAction,
-  InterceptedReduxActionPreparedData,
-  InterceptedStorageActionPreparedData,
-  ProjectInfo,
-  ObjectT
-} from './types';
+import * as T from './types';
 import { CONFIG } from './config';
 import { EventHandleError, ScenarioHandleError } from './Errors';
 import { SOCKET_EVENTS_LISTEN, SOCKET_EVENTS_EMIT } from './api/api';
@@ -36,25 +15,25 @@ import moment from 'moment';
 
 export class Connector {
   private static _currentInstanceId = 0;
-  private static _eventListenersTable: EventListenersTable = {};
+  private static _eventListenersTable: T.EventListenersTable = {};
   private static _currentInterceptedReduxActionId = 0;
   private static _currentInterceptedStorageActionId = 0;
   private static _currentCapturedEventId = 0;
   private _apiKey: string;
-  private _projectInfo: ProjectInfo | null = null;
-  private _instructionsTable: InstructionsTable = {};
-  private _onEventUsersCustomCallback: OnEventUsersCustomCallback;
-  private _networkInterceptor: NetworkInterceptorInstance | null = null;
-  private _connectionInfoPacket: ConnectionInfoPacket;
+  private _projectInfo: T.ProjectInfo | null = null;
+  private _instructionsTable: T.InstructionsTable = {};
+  private _onEventUsersCustomCallback: T.OnEventUsersCustomCallback;
+  private _networkInterceptor: T.NetworkInterceptorInstance | null = null;
+  private _connectionInfoPacket: T.ConnectionInfoPacket;
   private _shouldStopScenarioExecution: boolean = false;
-  private _lastEventLog: undefined | EventLog;
-  private _dataToForward: null | {[key: string]: any} = null;
+  private _lastEventLog: undefined | T.EventLog;
+  private _dataToForward: T.ObjectT<any> | null = null;
   private _socket: Socket;
   private _sendReduxStateBatchingTimer: NodeJS.Timeout | null = null;
   private _currentReduxStateCopy: any = null;
   private _sendReduxActionsBatchingTimer: NodeJS.Timeout | null = null;
   private _sendZustandStateBatchingTimer: NodeJS.Timeout | null = null;
-  private _currentReduxActionsBatch: InterceptedReduxActionPreparedData[] = [];
+  private _currentReduxActionsBatch: T.InterceptedReduxActionPreparedData[] = [];
   private _encryption: any = null;
   private _asyncStorageHandler: any = null;
   private _trackAsyncStorage: (() => void) | undefined;
@@ -64,13 +43,16 @@ export class Connector {
   private _untrackLocalStorage: (() => void) | undefined;
   private _storageActionsBatchingTimeMs: number = 500;
   private _sendStorageActionsBatchingTimer: NodeJS.Timeout | null = null;
-  private _currentStorageActionsBatch: InterceptedStorageActionPreparedData[] = [];
+  private _currentStorageActionsBatch: T.InterceptedStorageActionPreparedData[] = [];
   private _unsubscribeFromAppStateChanges: (() => void) | undefined;
+  private _tanStackQueriesDataMonitorInterval: NodeJS.Timer | null = null;
+  private _sendTanStackQueriesDataBatchingTimer: NodeJS.Timeout | null = null;
+  private _currentTanStackQueriesDataCopy: any = null;
 
-  public static lastEvent: RemoteEvent | null = null;
+  public static lastEvent: T.RemoteEvent | null = null;
   public readonly instanceId: number;
 
-  public static addEventListener(key: string, handler: (event: RemoteEvent) => any) {
+  public static addEventListener(key: string, handler: (event: T.RemoteEvent) => any) {
     Connector._eventListenersTable[key] = handler;
   };
 
@@ -78,7 +60,7 @@ export class Connector {
     delete Connector._eventListenersTable[key];
   };
 
-  private _prepareEnvironmentInfo(config?: PackageConfig): ObjectT<any> {
+  private _prepareEnvironmentInfo(config?: T.PackageConfig): T.ObjectT<any> {
     try {
       const envInfo = getProcessEnv();
       const osInfo = config?.ReactNativePlugin ? config.ReactNativePlugin.getOS() : getOS();
@@ -103,18 +85,18 @@ export class Connector {
     return this._encryption.encryptData(json);
   };
   
-  private _fillInstructionsTable(instructions: Instruction[]) {
-    const table: InstructionsTable = {};
+  private _fillInstructionsTable(instructions: T.Instruction[]) {
+    const table: T.InstructionsTable = {};
 
-    instructions.forEach((ins: Instruction) => {
+    instructions.forEach((ins: T.Instruction) => {
       table[ins.id] = ins;
     });
 
     this._instructionsTable = table;
   }
 
-  private _getInstructionsPublicFields(instructions: Instruction[]) {
-    const instructionsPublic = instructions.map((el: Instruction) => {
+  private _getInstructionsPublicFields(instructions: T.Instruction[]) {
+    const instructionsPublic = instructions.map((el: T.Instruction) => {
       const publicData = (({ handler, ...o }) => o)(el); // remove "handler" field
       return publicData;
     });
@@ -122,7 +104,7 @@ export class Connector {
     return instructionsPublic;
   }
 
-  private serveAllExternalListenersWithNewEvent(event: RemoteEvent) {
+  private serveAllExternalListenersWithNewEvent(event: T.RemoteEvent) {
     Connector.lastEvent = event;
     this._onEventUsersCustomCallback(event);
 
@@ -130,13 +112,12 @@ export class Connector {
       Connector._eventListenersTable[key](event);
   };
 
-  private async _innerHandleEvent(event: RemoteEvent, isPartOfScenario: boolean = false) {
+  private async _innerHandleEvent(event: T.RemoteEvent, isPartOfScenario: boolean = false) {
     const startTimestamp = moment().valueOf();
 
     try {
-      const correspondingInstructionsTable = event.eventType === "default" ? this._instructionsTable: SPECIAL_INSTRUCTIONS_TABLE;
-      // @ts-ignore
-      const correspondingInstruction: Instruction = correspondingInstructionsTable[event.instructionId];
+      const correspondingInstructionsTable: T.InstructionsTable = event.eventType === "default" ? this._instructionsTable: SPECIAL_INSTRUCTIONS_TABLE;
+      const correspondingInstruction: T.Instruction = correspondingInstructionsTable[event.instructionId];
       if (!correspondingInstruction)
         throw new EventHandleError(event, `No instruction with id ${event.instructionId} found.`);
 
@@ -144,8 +125,7 @@ export class Connector {
 
       if (this._dataToForward && event.args[0]) {
         Object.keys(this._dataToForward).forEach((key) => {
-          // @ts-ignore
-          event.args[0][key] = this._dataToForward[key];
+          event.args![0][key] = this._dataToForward![key];
         });
         this._dataToForward = null;
       }
@@ -167,7 +147,7 @@ export class Connector {
         else
           result = {conditionEvaluatedTo: 1, shouldSkipNextEvent: 0};
       } else if (event.instructionId === "forwardData" && this._lastEventLog?.result) {
-        const dataToForward: {[key: string]: any} = {};
+        const dataToForward: T.ObjectT<any> = {};
         for (const key of event.args[0].paramsToForward)
           dataToForward[key] = this._lastEventLog.result[key];
 
@@ -175,7 +155,7 @@ export class Connector {
       }
 
       const endTimestamp = moment().valueOf();
-      const eventLog: EventLog = {
+      const eventLog: T.EventLog = {
         event,
         ok: true,
         result,
@@ -196,7 +176,7 @@ export class Connector {
         throw error;
 
       const endTimestamp = moment().valueOf();
-      const eventLog: EventLog = {
+      const eventLog: T.EventLog = {
         event,
         ok: false,
         error,
@@ -210,7 +190,7 @@ export class Connector {
     }
   }
 
-  private async _innerHandleScenario(scenario: RemoteScenario) {
+  private async _innerHandleScenario(scenario: T.RemoteScenario) {
     var eventIndex = 0;
     this._lastEventLog = undefined;
     this._dataToForward = null;
@@ -234,7 +214,7 @@ export class Connector {
       }
 
       const endTimestamp = moment().valueOf();
-      const scenarioLog: ScenarioLog = {
+      const scenarioLog: T.ScenarioLog = {
         scenario,
         ok: true,
         executionWasStoppedManually,
@@ -250,7 +230,7 @@ export class Connector {
 
       const scenarioError = new ScenarioHandleError(scenario, scenario.events[eventIndex], "Scenario execution failed.");
       const endTimestamp = moment().valueOf();
-      const scenarioLog: ScenarioLog = {
+      const scenarioLog: T.ScenarioLog = {
         scenario,
         ok: false,
         error: scenarioError,
@@ -264,16 +244,14 @@ export class Connector {
     }
   }
 
-  private async _setupNetworkMonitor(config: PackageConfig) {
+  private async _setupNetworkMonitor(config: T.PackageConfig) {
     this._networkInterceptor = new config.Interceptor({
-      onRequest: ({ request, requestId }: NetworkInterceptorOnRequestPayload) => {
-        // codebudConsoleLog(`Intercepted request ${requestId}`, request);
+      onRequest: ({ request, requestId }: T.NetworkInterceptorOnRequestPayload) => {
         const timestamp = moment().valueOf();
         const encryptedData = this._encryptData({request, requestId, timestamp});
         encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_REQUEST, encryptedData.result);
       },
-      onResponse: ({ response, request, requestId }: NetworkInterceptorOnResponsePayload) => {
-        // codebudConsoleLog(`Intercepted response ${requestId}`, response);
+      onResponse: ({ response, request, requestId }: T.NetworkInterceptorOnResponsePayload) => {
         const timestamp = moment().valueOf();
         const encryptedData = this._encryptData({response, request, requestId, timestamp});
         encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_RESPONSE, encryptedData.result);
@@ -281,14 +259,14 @@ export class Connector {
     });
   };
 
-  private async _setupRN(config: PackageConfig) {
+  private async _setupRN(config: T.PackageConfig) {
     this._unsubscribeFromAppStateChanges = config.ReactNativePlugin.subscribeForAppStateChanges(
       () => this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_MOBILE_APP_STATE, {foreground: true}), 
       () => this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_MOBILE_APP_STATE, {foreground: false}),
     );
   };
  
-  constructor(apiKey: string, instructions: Instruction[], usersCustomCallback: OnEventUsersCustomCallback, config?: PackageConfig) {
+  constructor(apiKey: string, instructions: T.Instruction[], usersCustomCallback: T.OnEventUsersCustomCallback, config?: T.PackageConfig) {
     this.instanceId = Connector._currentInstanceId++;
 
     this._apiKey = apiKey;
@@ -331,35 +309,33 @@ export class Connector {
       this._socket.emit(SOCKET_EVENTS_EMIT.SET_CONNECTION_INFO, this._connectionInfoPacket);
     });
 
-    this._socket.on(SOCKET_EVENTS_LISTEN.ADMIN_CONNECTED, (data: AdminConnectedData) => {
-      codebudConsoleLog("AdminConnected");
-      if (!data.isAdmin) {
+    this._socket.on(SOCKET_EVENTS_LISTEN.ADMIN_CONNECTED, (data: T.AdminConnectedData) => {
+      if (!data.isAdmin)
         return;
-      }
+
+      codebudConsoleLog("GUI Connected");
 
       if (this._encryption)
         this._encryption.setAdminPanelPublicKey(data.publicKey.data);
     });
 
-    this._socket.on(SOCKET_EVENTS_LISTEN.EVENT, (event: RemoteEvent) => this._innerHandleEvent(event));
+    this._socket.on(SOCKET_EVENTS_LISTEN.EVENT, (event: T.RemoteEvent) => this._innerHandleEvent(event));
 
-    this._socket.on(SOCKET_EVENTS_LISTEN.SCENARIO, (scenario: RemoteScenario) => this._innerHandleScenario(scenario));
+    this._socket.on(SOCKET_EVENTS_LISTEN.SCENARIO, (scenario: T.RemoteScenario) => this._innerHandleScenario(scenario));
 
     this._socket.on(SOCKET_EVENTS_LISTEN.STOP_SCENARIO_EXECUTION, () => {
       codebudConsoleLog("Stopping scenario manually...");
       this._shouldStopScenarioExecution = true;
     });
 
-    this._socket.on(SOCKET_EVENTS_LISTEN.SAVE_NEW_REMOTE_SETTINGS, (r: RemoteSettings) => {
-      remoteSettingsService.onGotNewRemoteSettings(r);
-    });
+    this._socket.on(SOCKET_EVENTS_LISTEN.SAVE_NEW_REMOTE_SETTINGS, (r: T.RemoteSettings) => remoteSettingsService.onGotNewRemoteSettings(r));
 
     this._socket.on(SOCKET_EVENTS_LISTEN.CONNECT_ERROR, (err) => {
       codebudConsoleWarn(`Socket connect_error: ${err.message}`);
     });
 
     this._socket.on(SOCKET_EVENTS_LISTEN.ERROR, (error) => {
-      codebudConsoleWarn('Socket send error:', error);
+      codebudConsoleWarn('Socket sent an error:', error);
     });
 
     this._socket.on(SOCKET_EVENTS_LISTEN.DISCONNECT, async () => {
@@ -392,7 +368,7 @@ export class Connector {
     }
   }
 
-  public handleDispatchedReduxAction(action: InterceptedReduxAction, batchingTimeMs: number) {
+  public handleDispatchedReduxAction(action: T.InterceptedReduxAction, batchingTimeMs: number) {
     if (this._socket.connected) {
       const timestamp = moment().valueOf();
       const actionId = Connector._currentInterceptedReduxActionId++;
@@ -480,7 +456,39 @@ export class Connector {
     }
   }
 
-  // Метод для "чистки" данных нашего пакета
+  private _proceedNewTanStackQueriesData(queriesData: T.TanStackGetQueriesDataReturnType, batchingTimeMs: number) {
+    const previousTanStackQueriesDataCopyStr = JSON.stringify(this._currentTanStackQueriesDataCopy);
+    this._currentTanStackQueriesDataCopy = queriesData;
+
+    if (this._socket.connected && previousTanStackQueriesDataCopyStr !== JSON.stringify(this._currentTanStackQueriesDataCopy)) {
+      if (this._sendTanStackQueriesDataBatchingTimer)
+        clearTimeout(this._sendTanStackQueriesDataBatchingTimer);
+
+      this._sendTanStackQueriesDataBatchingTimer = setTimeout(() => {
+        const encryptedData = this._encryptData({state: this._currentTanStackQueriesDataCopy, timestamp: moment().valueOf()});
+        encryptedData.ok && this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_TANSTACK_QUERIES_DATA_COPY, encryptedData.result);
+      }, batchingTimeMs);
+    }
+  }
+
+  public monitorTanStackQueriesData(queryClient: any, updateIntervalMs: number, batchingTimeMs: number) {
+    try {
+      this._tanStackQueriesDataMonitorInterval = setInterval(() => {
+        const queriesData: T.TanStackGetQueriesDataReturnType = queryClient.getQueriesData({type: "all"});
+        this._proceedNewTanStackQueriesData(queriesData, batchingTimeMs);
+      }, updateIntervalMs);
+
+      // Return unsubscribe function
+      return () => {
+        if (this._tanStackQueriesDataMonitorInterval !== null)
+          clearInterval(this._tanStackQueriesDataMonitorInterval);
+      }
+    } catch (e) {
+      codebudConsoleWarn(`Error while trying to monitor TanStack queries data`, e);
+      return () => {};
+    }
+  }
+
   public disconnect() {
     this._socket.disconnect();
     this._apiKey = "";
@@ -509,6 +517,9 @@ export class Connector {
     }
 
     this._unsubscribeFromAppStateChanges && this._unsubscribeFromAppStateChanges();
+
+    if (this._tanStackQueriesDataMonitorInterval !== null)
+      clearInterval(this._tanStackQueriesDataMonitorInterval);
     
     // Think about it later
     Connector.lastEvent = null;

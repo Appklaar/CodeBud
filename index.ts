@@ -180,6 +180,20 @@ export const CodeBud: ModuleInterface = {
         codebudConsoleWarn(e);
     }
   },
+
+  monitorTanStackQueriesData(queryClient, updateInterval = 1000, batchingTimeMs = 500) {
+    try {
+      if (!this._connector)
+        throw new Error(`Something went wrong while enabling TanStack queries data monitor. Double check that you initialized ${CONFIG.PRODUCT_NAME}`);
+
+      return this._connector.monitorTanStackQueriesData(queryClient, updateInterval, batchingTimeMs);
+    } catch (e) {
+      if (this._mode === "dev")
+        codebudConsoleWarn(e);
+
+      return () => {};
+    }
+  },
  
   disconnect() {
     this._mode = "dev";

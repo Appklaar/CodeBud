@@ -199,6 +199,14 @@ declare module '@appklaar/codebud' {
      */
     captureEvent: (title: string, data: any) => void;
     /**
+     * Function that enables TanStack queries data monitor.
+     * @param {any} queryClient Your queryClient
+     * @param {number} [updateIntervalMs = 1000] Interval of re-checking TanStack queries data (in ms). Defaults to 1000.
+     * @param {number} [batchingTimeMs = 500] Batching time of sending new TanStack queries data copy (in ms). Defaults to 500
+     * @returns {Function} Unsubscribe function.
+     */
+    monitorTanStackQueriesData: (queryClient: any, updateInterval?: number, batchingTimeMs?: number) => (() => void),
+    /**
      * Close the connection.
      */
     disconnect: () => void;

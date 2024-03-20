@@ -181,3 +181,9 @@ export type GetRemoteSettingsRequest = {
 };
 
 export type RefreshRemoteSettingsCallback = (r: RemoteSettings) => void;
+
+export type TanStackQueryKey = readonly unknown[];
+
+export type TanStackQueryFnData = unknown | undefined;
+
+export type TanStackGetQueriesDataReturnType = ([TanStackQueryKey, TanStackQueryFnData])[];
