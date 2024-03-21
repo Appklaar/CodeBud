@@ -1,4 +1,5 @@
-import { EventHandleError, ScenarioHandleError } from "./Errors";
+import { EventHandleError, ScenarioHandleError } from "../Errors";
+import { TanStackQueryCacheEvent } from "./tanstackQueryCacheNotifyEventTypes";
 
 export type ObjectT<T> = {[key: string]: T};
 
@@ -187,3 +188,9 @@ export type TanStackQueryKey = readonly unknown[];
 export type TanStackQueryFnData = unknown | undefined;
 
 export type TanStackGetQueriesDataReturnType = ([TanStackQueryKey, TanStackQueryFnData])[];
+
+export type InterceptedTanStackQueryEventPreparedData = {
+  tanStackQueryEventId: string;
+  event: TanStackQueryCacheEvent;
+  timestamp: number;
+};

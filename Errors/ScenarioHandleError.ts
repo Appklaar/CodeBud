@@ -1,4 +1,4 @@
-import { RemoteEvent, RemoteScenario } from "../types";
+import { RemoteEvent, RemoteScenario } from "../types/types";
 
 export class ScenarioHandleError extends Error {
   public scenario: RemoteScenario;

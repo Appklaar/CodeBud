@@ -1,4 +1,4 @@
-import { ObjectT } from "../types";
+import { ObjectT } from "../types/types";
 
 export type BrowserName = null | 'Opera' | 'MS Edge' | 'Chrome' | 'Mozilla Firefox' | 'Safari' | 'MS Explorer' | 'UC Browser' | 'Samsung Browser'; 
 

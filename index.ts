@@ -10,7 +10,7 @@ import { prepareInstructionsFromGroup } from './helpers/instructionsHelpers';
 import { updateAuthorizationHeaderWithApiKey } from './api/api';
 import { remoteSettingsService } from './services/remoteSettingsService';
 
-export type { Instruction, InstructionGroup } from './types';
+export type { Instruction, InstructionGroup } from './types/types';
 
 export const CodeBud: ModuleInterface = {
   _apiKey : null,
@@ -187,6 +187,20 @@ export const CodeBud: ModuleInterface = {
         throw new Error(`Something went wrong while enabling TanStack queries data monitor. Double check that you initialized ${CONFIG.PRODUCT_NAME}`);
 
       return this._connector.monitorTanStackQueriesData(queryClient, updateInterval, batchingTimeMs);
+    } catch (e) {
+      if (this._mode === "dev")
+        codebudConsoleWarn(e);
+
+      return () => {};
+    }
+  },
+
+  monitorTanStackQueryEvents(queryClient, batchingTimeMs = 500) {
+    try {
+      if (!this._connector)
+        throw new Error(`Something went wrong while enabling TanStack Query events monitor. Double check that you initialized ${CONFIG.PRODUCT_NAME}`);
+
+      return this._connector.monitorTanStackQueryEvents(queryClient, batchingTimeMs);
     } catch (e) {
       if (this._mode === "dev")
         codebudConsoleWarn(e);

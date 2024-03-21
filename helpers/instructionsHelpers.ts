@@ -1,6 +1,6 @@
 import { COLORS } from "../constants/colors";
 import { validateHexColor } from "../constants/regex";
-import { Instruction, InstructionGroup } from "../types";
+import { Instruction, InstructionGroup } from "../types/types";
 import { getRandomInt } from "./random";
 
 export const prepareInstructionsFromGroup = (group: InstructionGroup): Instruction[] => {

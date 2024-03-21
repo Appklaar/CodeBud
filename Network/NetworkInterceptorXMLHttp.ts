@@ -1,6 +1,6 @@
 import { XMLHttpRequestInterceptor } from '@mswjs/interceptors/XMLHttpRequest';
 import { NetworkInterceptorApi } from './AbstractInterceptor';
-import { NetworkInterceptorCallbacksTable } from '../types';
+import { NetworkInterceptorCallbacksTable } from '../types/types';
 import { shouldProceedIntercepted } from './helpers';
 import { codebudConsoleLog } from '../helpers/helperFunctions';
 

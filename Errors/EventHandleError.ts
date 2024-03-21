@@ -1,4 +1,4 @@
-import { RemoteEvent } from "../types";
+import { RemoteEvent } from "../types/types";
 
 export class EventHandleError extends Error {
   public event: RemoteEvent;

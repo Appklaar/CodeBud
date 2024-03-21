@@ -1,4 +1,4 @@
-import { InterceptedRequest, InterceptedResponse } from "../types";
+import { InterceptedRequest, InterceptedResponse } from "../types/types";
 
 export abstract class NetworkInterceptorApi {
   protected abstract formatRequest(request: any): Promise<InterceptedRequest>;

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { RemoteEvent } from '../../types';
+import { RemoteEvent } from '../../types/types';
 import { Connector } from './../../Connector';
 import { getId } from './../../helpers/random';
 

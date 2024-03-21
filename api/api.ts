@@ -3,7 +3,7 @@ import { CONFIG } from './../config';
 import { 
   GetRemoteSettingsRequest,
   GetRemoteSettingsResponse
-} from "./../types";
+} from "../types/types";
 
 const SOCKET_EVENTS_LISTEN = {
   CONNECT: "connect",

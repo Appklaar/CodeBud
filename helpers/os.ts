@@ -1,4 +1,4 @@
-import { ObjectT } from "../types";
+import { ObjectT } from "../types/types";
 
 export type UserOS = null | 'MacOS' | 'iOS' | 'Windows' | 'Android' | 'Linux';
 

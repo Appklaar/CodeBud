@@ -1,4 +1,4 @@
-import { ObjectT } from "../types";
+import { ObjectT } from "../types/types";
 
 export const getProcessEnv = (): ObjectT<any> => {
   try {

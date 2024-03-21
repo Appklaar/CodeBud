@@ -1,5 +1,5 @@
 import { CONFIG } from "../config";
-import { ObjectT } from "../types";
+import { ObjectT } from "../types/types";
 import { payloadSizeValidator } from "./payloadSizeValidator";
 
 export function delay(ms: number) {

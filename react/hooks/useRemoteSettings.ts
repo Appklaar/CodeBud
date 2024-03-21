@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { RemoteSettings } from '../../types';
+import { RemoteSettings } from '../../types/types';
 import { remoteSettingsService } from "./../../services/remoteSettingsService";
 import { getId } from './../../helpers/random';
 

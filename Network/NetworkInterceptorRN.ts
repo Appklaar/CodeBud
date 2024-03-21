@@ -1,6 +1,6 @@
 import { NetworkInterceptorApi } from './AbstractInterceptor';
 import { startNetworkLogging, stopNetworkLogging, clearRequests } from "./../rn";
-import { NetworkInterceptorCallbacksTable } from '../types';
+import { NetworkInterceptorCallbacksTable } from '../types/types';
 import { CONFIG } from './../config';
 import { codebudConsoleLog } from '../helpers/helperFunctions';
 import { shouldProceedIntercepted } from './helpers';

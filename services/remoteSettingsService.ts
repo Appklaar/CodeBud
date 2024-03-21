@@ -1,6 +1,6 @@
 import { validateHexId24Symbols } from "../constants/regex";
 import { codebudConsoleWarn } from "../helpers/helperFunctions";
-import { RefreshRemoteSettingsCallback, RemoteSettings, RemoteSettingsListenersTable } from "../types";
+import { RefreshRemoteSettingsCallback, RemoteSettings, RemoteSettingsListenersTable } from "../types/types";
 import { api } from './../api/api';
 
 class RemoteSettingsService {

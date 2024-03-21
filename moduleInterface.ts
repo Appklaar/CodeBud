@@ -1,5 +1,5 @@
 import { Connector } from './Connector';
-import { OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettings, PackageConfig, Instruction, InstructionGroup, PackageMode } from './types';
+import { OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettings, PackageConfig, Instruction, InstructionGroup, PackageMode } from './types/types';
 import { ModuleState } from './States';
 
 export interface AppKlaarSdk {
@@ -86,6 +86,13 @@ export interface AppKlaarSdk {
    * @returns {Function} Unsubscribe function.
    */
   monitorTanStackQueriesData: (queryClient: any, updateInterval?: number, batchingTimeMs?: number) => (() => void),
+  /**
+   * Function that enables TanStack Query events monitor.
+   * @param {any} queryClient Your queryClient
+   * @param {number} [batchingTimeMs = 500] Batching time of sending TanStack Query events (in ms). Defaults to 500
+   * @returns {Function} Unsubscribe function.
+   */
+  monitorTanStackQueryEvents: (queryClient: any, batchingTimeMs?: number) => (() => void),
   /**
    * Close the connection.
    */

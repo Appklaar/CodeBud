@@ -19,6 +19,7 @@ export class Connector {
   private static _currentInterceptedReduxActionId = 0;
   private static _currentInterceptedStorageActionId = 0;
   private static _currentCapturedEventId = 0;
+  private static _currentInterceptedTanStackQueryEventId = 0;
   private _apiKey: string;
   private _projectInfo: T.ProjectInfo | null = null;
   private _instructionsTable: T.InstructionsTable = {};
@@ -48,6 +49,9 @@ export class Connector {
   private _tanStackQueriesDataMonitorInterval: NodeJS.Timer | null = null;
   private _sendTanStackQueriesDataBatchingTimer: NodeJS.Timeout | null = null;
   private _currentTanStackQueriesDataCopy: any = null;
+  private _unsubscribeFromTanStackQueryEvents: (() => void) | undefined;
+  private _sendTanStackQueryEventsBatchingTimer: NodeJS.Timeout | null = null;
+  private _currentTanStackQueryEventsBatch: T.InterceptedTanStackQueryEventPreparedData[] = [];
 
   public static lastEvent: T.RemoteEvent | null = null;
   public readonly instanceId: number;
@@ -489,6 +493,38 @@ export class Connector {
     }
   }
 
+  private _proceedInterceptedTanStackQueryEvent(event: T.TanStackQueryCacheEvent, batchingTimeMs: number) {
+    if (this._socket.connected) {
+      const timestamp = moment().valueOf();
+      const tanStackQueryEventId = Connector._currentInterceptedTanStackQueryEventId++;
+      const tanStackQueryEventData: T.InterceptedTanStackQueryEventPreparedData = {tanStackQueryEventId: `TQE_${tanStackQueryEventId}`, event, timestamp};
+      jsonStringifyKeepMeta(tanStackQueryEventData).ok && this._currentTanStackQueryEventsBatch.push(tanStackQueryEventData);
+
+      if (this._sendTanStackQueryEventsBatchingTimer)
+        clearTimeout(this._sendTanStackQueryEventsBatchingTimer);
+
+      this._sendTanStackQueryEventsBatchingTimer = setTimeout(() => {
+        const encryptedData = this._encryptData({tanStackQueryEvents: this._currentTanStackQueryEventsBatch});
+        encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_TANSTACK_QUERY_EVENTS_BATCH, encryptedData.result);
+        this._currentTanStackQueryEventsBatch = [];
+      }, batchingTimeMs);
+    }
+  }
+
+  public monitorTanStackQueryEvents(queryClient: any, batchingTimeMs: number) {
+    try {
+      this._unsubscribeFromTanStackQueryEvents = queryClient.getQueryCache().subscribe((event: T.TanStackQueryCacheEvent) => {
+        if (event.type === "added" || event.type === "updated" || event.type === "removed")
+          this._proceedInterceptedTanStackQueryEvent(event, batchingTimeMs);
+      });
+
+      return this._unsubscribeFromTanStackQueryEvents!;
+    } catch (e) {
+      codebudConsoleWarn(`Error while trying to monitor TanStack Query events`, e);
+      return () => {};
+    }
+  }
+
   public disconnect() {
     this._socket.disconnect();
     this._apiKey = "";
@@ -516,11 +552,16 @@ export class Connector {
       this._localStorageHandler = null;
     }
 
+    this._currentStorageActionsBatch = [];
+
     this._unsubscribeFromAppStateChanges && this._unsubscribeFromAppStateChanges();
 
     if (this._tanStackQueriesDataMonitorInterval !== null)
       clearInterval(this._tanStackQueriesDataMonitorInterval);
-    
+
+    this._unsubscribeFromTanStackQueryEvents && this._unsubscribeFromTanStackQueryEvents();
+    this._currentTanStackQueryEventsBatch = [];
+
     // Think about it later
     Connector.lastEvent = null;
     Connector._eventListenersTable = {};

@@ -1,6 +1,6 @@
 import { setUpXHRInterceptor } from './../react/network/setupXHRInterceptor';
 import { NetworkInterceptorApi } from './AbstractInterceptor';
-import { NetworkInterceptorCallbacksTable } from '../types';
+import { NetworkInterceptorCallbacksTable } from '../types/types';
 import { shouldProceedIntercepted } from './helpers';
 import { codebudConsoleLog } from '../helpers/helperFunctions';
 
