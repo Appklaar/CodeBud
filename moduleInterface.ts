@@ -85,7 +85,7 @@ export interface AppKlaarSdk {
    * @param {number} [batchingTimeMs = 500] Batching time of sending new TanStack queries data copy (in ms). Defaults to 500
    * @returns {Function} Unsubscribe function.
    */
-  monitorTanStackQueriesData: (queryClient: any, updateInterval?: number, batchingTimeMs?: number) => (() => void),
+  monitorTanStackQueriesData: (queryClient: any, updateIntervalMs?: number, batchingTimeMs?: number) => (() => void),
   /**
    * Function that enables TanStack Query events monitor.
    * @param {any} queryClient Your queryClient
