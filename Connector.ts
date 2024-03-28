@@ -64,6 +64,10 @@ export class Connector {
     delete Connector._eventListenersTable[key];
   };
 
+  public static handleMonitoredContextValueUpdated(contextId: string, value: any) {
+    console.log("MonitoredContextValueUpdated", contextId, value);
+  };
+
   private _prepareEnvironmentInfo(config?: T.PackageConfig): T.ObjectT<any> {
     try {
       const envInfo = getProcessEnv();
