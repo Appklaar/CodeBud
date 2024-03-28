@@ -21,7 +21,9 @@
     "network",
     "interceptors",
     "http",
-    "monitor"
+    "monitor",
+    "zustand",
+    "tanstack-query"
   ],
   "dependencies": {
     "@mswjs/interceptors": "^0.22.7",
