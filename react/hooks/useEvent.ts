@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { RemoteEvent } from '../../types/types';
-import { Connector } from './../../Connector';
+import { connector } from './../../Connector';
 import { getId } from './../../helpers/random';
 
 export const useEvent = (
@@ -16,11 +16,11 @@ export const useEvent = (
         handler(event);
     };
 
-    Connector.addEventListener(listenerKey, innerHandler);
+    connector.addEventListener(listenerKey, innerHandler);
     
     // ComponentWillUnmount
     return () => {
-      Connector.removeEventListener(listenerKey);
+      connector.removeEventListener(listenerKey);
     };
   }, []);
 };

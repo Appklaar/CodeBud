@@ -13,23 +13,24 @@ import { asyncStoragePlugin } from './asyncStorage/asyncStorage';
 import { localStoragePlugin } from './localStorage/localStorage';
 import moment from 'moment';
 
-export class Connector {
-  private static _currentInstanceId = 0;
-  private static _eventListenersTable: T.EventListenersTable = {};
-  private static _currentInterceptedReduxActionId = 0;
-  private static _currentInterceptedStorageActionId = 0;
-  private static _currentCapturedEventId = 0;
-  private static _currentInterceptedTanStackQueryEventId = 0;
-  private _apiKey: string;
+class Connector {
+  private _eventListenersTable: T.EventListenersTable = {};
+  private _currentInterceptedReduxActionId = 0;
+  private _currentInterceptedStorageActionId = 0;
+  private _currentCapturedEventId = 0;
+  private _currentInterceptedTanStackQueryEventId = 0;
+  private _contextValueCopiesTable: T.ObjectT<any> = {};
+  private _connectorInitiated: boolean = false;
+  private _apiKey: string = "";
   private _projectInfo: T.ProjectInfo | null = null;
   private _instructionsTable: T.InstructionsTable = {};
-  private _onEventUsersCustomCallback: T.OnEventUsersCustomCallback;
+  private _onEventUsersCustomCallback: T.OnEventUsersCustomCallback | undefined;
   private _networkInterceptor: T.NetworkInterceptorInstance | null = null;
-  private _connectionInfoPacket: T.ConnectionInfoPacket;
+  private _connectionInfoPacket: T.ConnectionInfoPacket | undefined;
   private _shouldStopScenarioExecution: boolean = false;
   private _lastEventLog: undefined | T.EventLog;
   private _dataToForward: T.ObjectT<any> | null = null;
-  private _socket: Socket;
+  private _socket: Socket | undefined;
   private _sendReduxStateBatchingTimer: NodeJS.Timeout | null = null;
   private _currentReduxStateCopy: any = null;
   private _sendReduxActionsBatchingTimer: NodeJS.Timeout | null = null;
@@ -53,19 +54,34 @@ export class Connector {
   private _sendTanStackQueryEventsBatchingTimer: NodeJS.Timeout | null = null;
   private _currentTanStackQueryEventsBatch: T.InterceptedTanStackQueryEventPreparedData[] = [];
 
-  public static lastEvent: T.RemoteEvent | null = null;
-  public readonly instanceId: number;
+  public lastEvent: T.RemoteEvent | null = null;
 
-  public static addEventListener(key: string, handler: (event: T.RemoteEvent) => any) {
-    Connector._eventListenersTable[key] = handler;
+  public addEventListener(key: string, handler: (event: T.RemoteEvent) => any) {
+    this._eventListenersTable[key] = handler;
   };
 
-  public static removeEventListener(key: string) {
-    delete Connector._eventListenersTable[key];
+  public removeEventListener(key: string) {
+    delete this._eventListenersTable[key];
   };
 
-  public static handleMonitoredContextValueUpdated(contextId: string, value: any) {
-    console.log("MonitoredContextValueUpdated", contextId, value);
+  public handleMonitoredContextValueUpdated(contextId: string, value: any, wait: number) {
+    // const previousTanStackQueriesDataCopyStr = JSON.stringify(this._currentTanStackQueriesDataCopy);
+    // this._currentTanStackQueriesDataCopy = queriesData;
+
+    // if (this._socket.connected && previousTanStackQueriesDataCopyStr !== JSON.stringify(this._currentTanStackQueriesDataCopy)) {
+    //   if (this._sendTanStackQueriesDataBatchingTimer)
+    //     clearTimeout(this._sendTanStackQueriesDataBatchingTimer);
+
+    //   this._sendTanStackQueriesDataBatchingTimer = setTimeout(() => {
+    //     const encryptedData = this._encryptData({queriesData: this._currentTanStackQueriesDataCopy, timestamp: moment().valueOf()});
+    //     encryptedData.ok && this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_TANSTACK_QUERIES_DATA_COPY, encryptedData.result);
+    //   }, batchingTimeMs);
+    // }
+
+    const previousValueOfContextCopyStr = JSON.stringify(this._contextValueCopiesTable[contextId]);
+    this._contextValueCopiesTable[contextId] = value;
+
+    // if ()
   };
 
   private _prepareEnvironmentInfo(config?: T.PackageConfig): T.ObjectT<any> {
@@ -113,11 +129,11 @@ export class Connector {
   }
 
   private serveAllExternalListenersWithNewEvent(event: T.RemoteEvent) {
-    Connector.lastEvent = event;
-    this._onEventUsersCustomCallback(event);
+    this.lastEvent = event;
+    this._onEventUsersCustomCallback && this._onEventUsersCustomCallback(event);
 
-    for (const key of Object.keys(Connector._eventListenersTable))
-      Connector._eventListenersTable[key](event);
+    for (const key of Object.keys(this._eventListenersTable))
+      this._eventListenersTable[key](event);
   };
 
   private async _innerHandleEvent(event: T.RemoteEvent, isPartOfScenario: boolean = false) {
@@ -143,7 +159,7 @@ export class Connector {
       if (event.args.length !== correspondingInstruction.handler.length)
         throw new EventHandleError(event, `Instruction handler takes ${correspondingInstruction.handler.length} args, but ${event.args.length} were passed.`);
 
-      this._socket.emit(SOCKET_EVENTS_EMIT.EXECUTING_EVENT, event.id);
+      this._socket?.emit(SOCKET_EVENTS_EMIT.EXECUTING_EVENT, event.id);
 
       let result = await correspondingInstruction.handler(...event.args);
 
@@ -173,7 +189,7 @@ export class Connector {
       };
      
       const encryptedData = this._encryptData(eventLog);
-      encryptedData.ok && this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_EVENT_LOG, encryptedData.result);
+      encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_EVENT_LOG, encryptedData.result);
 
       return eventLog;
     } catch (error: EventHandleError | unknown) {
@@ -194,7 +210,7 @@ export class Connector {
       };
       
       const encryptedData = this._encryptData(eventLog);
-      encryptedData.ok && this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_EVENT_LOG, encryptedData.result);
+      encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_EVENT_LOG, encryptedData.result);
     }
   }
 
@@ -205,7 +221,7 @@ export class Connector {
 
     const startTimestamp = moment().valueOf();
     try {
-      this._socket.emit(SOCKET_EVENTS_EMIT.EXECUTING_SCENARIO, scenario.id);
+      this._socket?.emit(SOCKET_EVENTS_EMIT.EXECUTING_SCENARIO, scenario.id);
 
       let executionWasStoppedManually = false;
       for (const event of scenario.events) {
@@ -232,7 +248,7 @@ export class Connector {
       };
 
       const encryptedData = this._encryptData(scenarioLog);
-      encryptedData.ok && this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_SCENARIO_LOG, encryptedData.result);
+      encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_SCENARIO_LOG, encryptedData.result);
     } catch (error) {
       codebudConsoleLog(`Error while trying to handle scenario.`, error);
 
@@ -248,7 +264,7 @@ export class Connector {
       };
 
       const encryptedData = this._encryptData(scenarioLog);
-      encryptedData.ok && this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_SCENARIO_LOG, encryptedData.result);
+      encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_SCENARIO_LOG, encryptedData.result);
     }
   }
 
@@ -273,10 +289,8 @@ export class Connector {
       () => this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_MOBILE_APP_STATE, {foreground: false}),
     );
   };
- 
-  constructor(apiKey: string, instructions: T.Instruction[], usersCustomCallback: T.OnEventUsersCustomCallback, config?: T.PackageConfig) {
-    this.instanceId = Connector._currentInstanceId++;
 
+  public init(apiKey: string, instructions: T.Instruction[], usersCustomCallback: T.OnEventUsersCustomCallback, config?: T.PackageConfig) {
     this._apiKey = apiKey;
     this._fillInstructionsTable(instructions);
     this._onEventUsersCustomCallback = usersCustomCallback;
@@ -313,8 +327,8 @@ export class Connector {
     }
 
     this._socket.on(SOCKET_EVENTS_LISTEN.CONNECT, () => {
-      codebudConsoleLog('Socket connected:', this._socket.connected);
-      this._socket.emit(SOCKET_EVENTS_EMIT.SET_CONNECTION_INFO, this._connectionInfoPacket);
+      codebudConsoleLog('Socket connected:', this._socket?.connected);
+      this._socket?.emit(SOCKET_EVENTS_EMIT.SET_CONNECTION_INFO, this._connectionInfoPacket);
     });
 
     this._socket.on(SOCKET_EVENTS_LISTEN.ADMIN_CONNECTED, (data: T.AdminConnectedData) => {
@@ -349,9 +363,15 @@ export class Connector {
     this._socket.on(SOCKET_EVENTS_LISTEN.DISCONNECT, async () => {
       codebudConsoleLog('Socket disconnected.');
       setTimeout(() => {
-        this._socket.connect();
+        this._socket?.connect();
       }, CONFIG.SOCKET_RECONNECTION_DELAY);
     });
+
+    this._connectorInitiated = true;
+  };
+
+  public get isInit(): boolean {
+    return this._connectorInitiated;
   }
 
   public createReduxStoreChangeHandler(store: any, selectFn: (state: any) => any, batchingTimeMs: number): () => void {
@@ -360,13 +380,13 @@ export class Connector {
         const previousReduxStateCopyStr = JSON.stringify(this._currentReduxStateCopy);
         this._currentReduxStateCopy = selectFn(store.getState());
 
-        if (this._socket.connected && previousReduxStateCopyStr !== JSON.stringify(this._currentReduxStateCopy)) {
+        if (this._socket?.connected && previousReduxStateCopyStr !== JSON.stringify(this._currentReduxStateCopy)) {
           if (this._sendReduxStateBatchingTimer)
             clearTimeout(this._sendReduxStateBatchingTimer);
 
           this._sendReduxStateBatchingTimer = setTimeout(() => {
             const encryptedData = this._encryptData({state: this._currentReduxStateCopy, timestamp: moment().valueOf()});
-            encryptedData.ok && this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_REDUX_STATE_COPY, encryptedData.result);
+            encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_REDUX_STATE_COPY, encryptedData.result);
           }, batchingTimeMs);
         }
       }
@@ -377,9 +397,9 @@ export class Connector {
   }
 
   public handleDispatchedReduxAction(action: T.InterceptedReduxAction, batchingTimeMs: number) {
-    if (this._socket.connected) {
+    if (this._socket?.connected) {
       const timestamp = moment().valueOf();
-      const actionId = Connector._currentInterceptedReduxActionId++;
+      const actionId = this._currentInterceptedReduxActionId++;
       const reduxActionData = {actionId: `RA_${actionId}`, action, timestamp};
       jsonStringifyKeepMeta(reduxActionData).ok && this._currentReduxActionsBatch.push(reduxActionData);
 
@@ -400,13 +420,13 @@ export class Connector {
         const prevStateSelected = selectFn(prevState);
         const currentStateSelected = selectFn(state);
 
-        if (this._socket.connected && JSON.stringify(prevStateSelected) !== JSON.stringify(currentStateSelected)) {
+        if (this._socket?.connected && JSON.stringify(prevStateSelected) !== JSON.stringify(currentStateSelected)) {
           if (this._sendZustandStateBatchingTimer)
             clearTimeout(this._sendZustandStateBatchingTimer);
 
           this._sendZustandStateBatchingTimer = setTimeout(() => {
             const encryptedData = this._encryptData({state: currentStateSelected, timestamp: moment().valueOf()});
-            encryptedData.ok && this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_ZUSTAND_STATE_COPY, encryptedData.result);
+            encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_ZUSTAND_STATE_COPY, encryptedData.result);
           }, batchingTimeMs);
         }
       }
@@ -419,9 +439,9 @@ export class Connector {
   // AsyncStorage / localStorage
   // used in asyncStoragePlugin & localStoragePlugin, (binded context)
   private _handleInterceptedStorageAction(action: string, data?: any) {
-    if (this._socket.connected) {
+    if (this._socket?.connected) {
       const timestamp = moment().valueOf();
-      const storageActionId = Connector._currentInterceptedStorageActionId++;
+      const storageActionId = this._currentInterceptedStorageActionId++;
       const storageActionData = {storageActionId: `SA_${storageActionId}`, action, data, timestamp};
       jsonStringifyKeepMeta(storageActionData).ok && this._currentStorageActionsBatch.push(storageActionData);
 
@@ -455,9 +475,9 @@ export class Connector {
   }
 
   public captureEvent(title: string, data: any) {
-    if (this._socket.connected) {
+    if (this._socket?.connected) {
       const timestamp = moment().valueOf();
-      const capturedEventId = Connector._currentCapturedEventId++;
+      const capturedEventId = this._currentCapturedEventId++;
 
       const encryptedData = this._encryptData({timestamp, capturedEventId: `UCE_${capturedEventId}`, title, data});
       encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.CAPTURE_EVENT, encryptedData.result);
@@ -468,13 +488,13 @@ export class Connector {
     const previousTanStackQueriesDataCopyStr = JSON.stringify(this._currentTanStackQueriesDataCopy);
     this._currentTanStackQueriesDataCopy = queriesData;
 
-    if (this._socket.connected && previousTanStackQueriesDataCopyStr !== JSON.stringify(this._currentTanStackQueriesDataCopy)) {
+    if (this._socket?.connected && previousTanStackQueriesDataCopyStr !== JSON.stringify(this._currentTanStackQueriesDataCopy)) {
       if (this._sendTanStackQueriesDataBatchingTimer)
         clearTimeout(this._sendTanStackQueriesDataBatchingTimer);
 
       this._sendTanStackQueriesDataBatchingTimer = setTimeout(() => {
         const encryptedData = this._encryptData({queriesData: this._currentTanStackQueriesDataCopy, timestamp: moment().valueOf()});
-        encryptedData.ok && this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_TANSTACK_QUERIES_DATA_COPY, encryptedData.result);
+        encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_TANSTACK_QUERIES_DATA_COPY, encryptedData.result);
       }, batchingTimeMs);
     }
   }
@@ -498,9 +518,9 @@ export class Connector {
   }
 
   private _proceedInterceptedTanStackQueryEvent(event: T.TanStackQueryCacheEvent, batchingTimeMs: number) {
-    if (this._socket.connected) {
+    if (this._socket?.connected) {
       const timestamp = moment().valueOf();
-      const tanStackQueryEventId = Connector._currentInterceptedTanStackQueryEventId++;
+      const tanStackQueryEventId = this._currentInterceptedTanStackQueryEventId++;
       const tanStackQueryEventData: T.InterceptedTanStackQueryEventPreparedData = {tanStackQueryEventId: `TQE_${tanStackQueryEventId}`, event, timestamp};
       jsonStringifyKeepMeta(tanStackQueryEventData).ok && this._currentTanStackQueryEventsBatch.push(tanStackQueryEventData);
 
@@ -530,7 +550,8 @@ export class Connector {
   }
 
   public disconnect() {
-    this._socket.disconnect();
+    this._connectorInitiated = false;
+    this._socket?.disconnect();
     this._apiKey = "";
     this._projectInfo = null;
     this._instructionsTable = {};
@@ -566,8 +587,9 @@ export class Connector {
     this._unsubscribeFromTanStackQueryEvents && this._unsubscribeFromTanStackQueryEvents();
     this._currentTanStackQueryEventsBatch = [];
 
-    // Think about it later
-    Connector.lastEvent = null;
-    Connector._eventListenersTable = {};
+    this.lastEvent = null;
+    this._eventListenersTable = {};
   }
 }
+
+export const connector = new Connector();

@@ -39,8 +39,7 @@ export const codebudConsoleLog = (...data: any[]) => {
   console.log(`${CONFIG.PRODUCT_NAME}:`, ...data);
 }
 
-// @ts-ignore
-export const emptyMiddleware = () => next => action => {
+export const emptyMiddleware = () => (next: any) => (action: any) => {
   return next(action);
 }
 

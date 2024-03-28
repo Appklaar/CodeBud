@@ -1,4 +1,4 @@
-import { Connector } from './Connector';
+import { connector } from './Connector';
 import { Instruction, OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettings } from './types';
 import { MODULE_STATES } from './States';
 import { EXISTING_SPECIAL_INSTRUCTION_IDS } from './constants/events';
@@ -14,7 +14,6 @@ export type { Instruction, InstructionGroup } from './types/types';
 
 export const CodeBud: ModuleInterface = {
   _apiKey : null,
-  _connector: null,
   _mode: "dev",
   _currentState: "NOT_INITIATED",
   _onEventUsersCustomCallback: () => {},
@@ -82,7 +81,7 @@ export const CodeBud: ModuleInterface = {
       this._currentState = "WORKING_PRODUCTION";
     } else {
       this._mode = "dev";
-      this._connector = new Connector(apiKey, processedInstructions, (event) => this._onEventUsersCustomCallback(event), config);
+      connector.init(apiKey, processedInstructions, (event) => this._onEventUsersCustomCallback(event), config);
       this._currentState = "WORKING";
     }
   },
@@ -92,7 +91,7 @@ export const CodeBud: ModuleInterface = {
   },
 
   get isInit(): boolean {
-		return !!this._apiKey;
+		return !!this._apiKey && connector.isInit;
 	},
 
   get state(): string {
@@ -109,10 +108,10 @@ export const CodeBud: ModuleInterface = {
 
   createReduxStoreChangeHandler(store, selectFn, batchingTimeMs = 500) {
     try {
-      if (!this._connector)
+      if (!connector.isInit)
         throw new Error(`Something went wrong while creating ReduxStoreChangeHandler. Double check that you initialized ${CONFIG.PRODUCT_NAME}`);
 
-      return this._connector.createReduxStoreChangeHandler(store, selectFn, batchingTimeMs);
+      return connector.createReduxStoreChangeHandler(store, selectFn, batchingTimeMs);
     } catch (e) {
       if (this._mode === "dev")
         codebudConsoleWarn(e);
@@ -122,10 +121,9 @@ export const CodeBud: ModuleInterface = {
   },
 
   createReduxActionMonitorMiddleware(batchingTimeMs = 200) {
-    // @ts-ignore
-    return () => next => action => {
-      if (this._connector)
-        this._connector.handleDispatchedReduxAction(action, batchingTimeMs);
+    return () => (next: any) => (action: any) => {
+      if (connector.isInit)
+        connector.handleDispatchedReduxAction(action, batchingTimeMs);
 
       return next(action);
     }
@@ -133,10 +131,10 @@ export const CodeBud: ModuleInterface = {
 
   createZustandStoreChangeHandler(selectFn, batchingTimeMs = 500) {
     try {
-      if (!this._connector)
+      if (!connector.isInit)
         throw new Error(`Something went wrong while creating ZustandStoreChangeHandler. Double check that you initialized ${CONFIG.PRODUCT_NAME}`);
 
-      return this._connector.createZustandStoreChangeHandler(selectFn, batchingTimeMs);
+      return connector.createZustandStoreChangeHandler(selectFn, batchingTimeMs);
     } catch (e) {
       if (this._mode === "dev")
         codebudConsoleWarn(e);
@@ -147,10 +145,10 @@ export const CodeBud: ModuleInterface = {
 
   enableAsyncStorageMonitor(asyncStorage, ignoreKeys = [], batchingTimeMs = 500) {
     try {
-      if (!this._connector)
+      if (!connector.isInit)
         throw new Error(`Something went wrong while creating AsyncStorage monitor. Double check that you initialized ${CONFIG.PRODUCT_NAME}`);
 
-      return this._connector.enableAsyncStorageMonitor(asyncStorage, ignoreKeys, batchingTimeMs);
+      return connector.enableAsyncStorageMonitor(asyncStorage, ignoreKeys, batchingTimeMs);
     } catch (e) {
       if (this._mode === "dev")
         codebudConsoleWarn(e);
@@ -159,10 +157,10 @@ export const CodeBud: ModuleInterface = {
 
   enableLocalStorageMonitor(localStorage, ignoreKeys = [], batchingTimeMs = 500) {
     try {
-      if (!this._connector)
+      if (!connector.isInit)
         throw new Error(`Something went wrong while creating localStorage monitor. Double check that you initialized ${CONFIG.PRODUCT_NAME}`);
 
-      return this._connector.enableLocalStorageMonitor(localStorage, ignoreKeys, batchingTimeMs);
+      return connector.enableLocalStorageMonitor(localStorage, ignoreKeys, batchingTimeMs);
     } catch (e) {
       if (this._mode === "dev")
         codebudConsoleWarn(e);
@@ -171,10 +169,10 @@ export const CodeBud: ModuleInterface = {
 
   captureEvent(title: string, data: any) {
     try {
-      if (!this._connector)
+      if (!connector.isInit)
         throw new Error(`Unable to capture event. Double check that you initialized ${CONFIG.PRODUCT_NAME}`);
 
-      return this._connector.captureEvent(title, data);
+      return connector.captureEvent(title, data);
     } catch (e) {
       if (this._mode === "dev")
         codebudConsoleWarn(e);
@@ -183,10 +181,10 @@ export const CodeBud: ModuleInterface = {
 
   monitorTanStackQueriesData(queryClient, updateIntervalMs = 1000, batchingTimeMs = 500) {
     try {
-      if (!this._connector)
+      if (!connector.isInit)
         throw new Error(`Something went wrong while enabling TanStack queries data monitor. Double check that you initialized ${CONFIG.PRODUCT_NAME}`);
 
-      return this._connector.monitorTanStackQueriesData(queryClient, updateIntervalMs, batchingTimeMs);
+      return connector.monitorTanStackQueriesData(queryClient, updateIntervalMs, batchingTimeMs);
     } catch (e) {
       if (this._mode === "dev")
         codebudConsoleWarn(e);
@@ -197,10 +195,10 @@ export const CodeBud: ModuleInterface = {
 
   monitorTanStackQueryEvents(queryClient, batchingTimeMs = 500) {
     try {
-      if (!this._connector)
+      if (!connector.isInit)
         throw new Error(`Something went wrong while enabling TanStack Query events monitor. Double check that you initialized ${CONFIG.PRODUCT_NAME}`);
 
-      return this._connector.monitorTanStackQueryEvents(queryClient, batchingTimeMs);
+      return connector.monitorTanStackQueryEvents(queryClient, batchingTimeMs);
     } catch (e) {
       if (this._mode === "dev")
         codebudConsoleWarn(e);
@@ -211,8 +209,7 @@ export const CodeBud: ModuleInterface = {
  
   disconnect() {
     this._mode = "dev";
-    this._connector && this._connector.disconnect();
-    this._connector = null;
+    connector.isInit && connector.disconnect();
     remoteSettingsService.clear();
     this._apiKey = null;
     updateAuthorizationHeaderWithApiKey("");
