@@ -33,6 +33,9 @@ const SOCKET_EVENTS_EMIT = {
   CAPTURE_EVENT: "captureEvent",
   SAVE_TANSTACK_QUERIES_DATA_COPY: "saveTanStackQueriesDataCopy",
   SAVE_TANSTACK_QUERY_EVENTS_BATCH: "saveTanStackQueryEventsBatch",
+  SAVE_CONTEXT_VALUE_COPY: "saveContextValueCopy",
+  SAVE_MOBX_STATE_COPY: "saveMobXStateCopy",
+  SAVE_MOBX_EVENTS_BATCH: "saveMobXEventsBatch"
 };
 
 const sauce = create({

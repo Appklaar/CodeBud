@@ -238,6 +238,12 @@ declare module '@appklaar/codebud/react' {
   ): void;
 
   export function useRemoteSettings(): RemoteSettings | null;
+
+  export function useContextMonitor(
+    SomeContext: any, 
+    label?: string, 
+    waitMs?: number
+  ): void;
 }
 
 declare module '@appklaar/codebud/Network/NetworkInterceptorClassic' {

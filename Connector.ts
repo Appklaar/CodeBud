@@ -19,7 +19,6 @@ class Connector {
   private _currentInterceptedStorageActionId = 0;
   private _currentCapturedEventId = 0;
   private _currentInterceptedTanStackQueryEventId = 0;
-  private _contextValueCopiesTable: T.ObjectT<any> = {};
   private _connectorInitiated: boolean = false;
   private _apiKey: string = "";
   private _projectInfo: T.ProjectInfo | null = null;
@@ -53,6 +52,8 @@ class Connector {
   private _unsubscribeFromTanStackQueryEvents: (() => void) | undefined;
   private _sendTanStackQueryEventsBatchingTimer: NodeJS.Timeout | null = null;
   private _currentTanStackQueryEventsBatch: T.InterceptedTanStackQueryEventPreparedData[] = [];
+  private _contextValueCopiesTable: T.ObjectT<any> = {};
+  private _sendContextValueThrottleTimersTable: T.ObjectT<NodeJS.Timeout | null> = {};
 
   public lastEvent: T.RemoteEvent | null = null;
 
@@ -62,26 +63,6 @@ class Connector {
 
   public removeEventListener(key: string) {
     delete this._eventListenersTable[key];
-  };
-
-  public handleMonitoredContextValueUpdated(contextId: string, value: any, wait: number) {
-    // const previousTanStackQueriesDataCopyStr = JSON.stringify(this._currentTanStackQueriesDataCopy);
-    // this._currentTanStackQueriesDataCopy = queriesData;
-
-    // if (this._socket.connected && previousTanStackQueriesDataCopyStr !== JSON.stringify(this._currentTanStackQueriesDataCopy)) {
-    //   if (this._sendTanStackQueriesDataBatchingTimer)
-    //     clearTimeout(this._sendTanStackQueriesDataBatchingTimer);
-
-    //   this._sendTanStackQueriesDataBatchingTimer = setTimeout(() => {
-    //     const encryptedData = this._encryptData({queriesData: this._currentTanStackQueriesDataCopy, timestamp: moment().valueOf()});
-    //     encryptedData.ok && this._socket.emit(SOCKET_EVENTS_EMIT.SAVE_TANSTACK_QUERIES_DATA_COPY, encryptedData.result);
-    //   }, batchingTimeMs);
-    // }
-
-    const previousValueOfContextCopyStr = JSON.stringify(this._contextValueCopiesTable[contextId]);
-    this._contextValueCopiesTable[contextId] = value;
-
-    // if ()
   };
 
   private _prepareEnvironmentInfo(config?: T.PackageConfig): T.ObjectT<any> {
@@ -508,7 +489,7 @@ class Connector {
 
       // Return unsubscribe function
       return () => {
-        if (this._tanStackQueriesDataMonitorInterval !== null)
+        if (this._tanStackQueriesDataMonitorInterval)
           clearInterval(this._tanStackQueriesDataMonitorInterval);
       }
     } catch (e) {
@@ -549,17 +530,50 @@ class Connector {
     }
   }
 
+  public handleMonitoredContextValueUpdated(contextId: string, value: any, waitMs: number) {
+    if (!this._connectorInitiated)
+      return;
+
+    const previousValueOfContextCopyStr = JSON.stringify(this._contextValueCopiesTable[contextId]);
+    this._contextValueCopiesTable[contextId] = value;
+
+    if (this._socket?.connected && previousValueOfContextCopyStr !== JSON.stringify(this._contextValueCopiesTable[contextId])) {
+      if (this._sendContextValueThrottleTimersTable[contextId])
+        clearTimeout(this._sendContextValueThrottleTimersTable[contextId]!);
+
+      this._sendContextValueThrottleTimersTable[contextId] = setTimeout(() => {
+        const encryptedData = this._encryptData({contextId, value: this._contextValueCopiesTable[contextId], timestamp: moment().valueOf()});
+        encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_CONTEXT_VALUE_COPY, encryptedData.result);
+      }, waitMs);
+    }
+  };
+
   public disconnect() {
     this._connectorInitiated = false;
     this._socket?.disconnect();
+    this._socket = undefined;
     this._apiKey = "";
     this._projectInfo = null;
     this._instructionsTable = {};
-    this._onEventUsersCustomCallback = () => {};
+    this._onEventUsersCustomCallback = undefined;
+    this._connectionInfoPacket = undefined;
+    this._shouldStopScenarioExecution = false;
     this._lastEventLog = undefined;
     this._dataToForward = null;
+
+    if (this._sendReduxStateBatchingTimer) 
+      clearTimeout(this._sendReduxStateBatchingTimer);
+
     this._currentReduxStateCopy = null;
+
+    if (this._sendReduxActionsBatchingTimer) 
+      clearTimeout(this._sendReduxActionsBatchingTimer);
+
     this._currentReduxActionsBatch = [];
+
+    if (this._sendZustandStateBatchingTimer)
+      clearTimeout(this._sendZustandStateBatchingTimer);
+
     this._encryption = null;
 
     if (this._networkInterceptor) {
@@ -568,24 +582,59 @@ class Connector {
     }
 
     if (this._asyncStorageHandler) {
-      this._untrackAsyncStorage && this._untrackAsyncStorage();
+      if (this._untrackAsyncStorage) {
+        this._untrackAsyncStorage();
+        this._untrackAsyncStorage = undefined;
+      }
+      this._trackAsyncStorage = undefined;
       this._asyncStorageHandler = null;
     }
 
     if (this._localStorageHandler) {
-      this._untrackLocalStorage && this._untrackLocalStorage();
+      if (this._untrackLocalStorage) {
+        this._untrackLocalStorage();
+        this._untrackLocalStorage = undefined;
+      }
+      this._trackLocalStorage = undefined;
       this._localStorageHandler = null;
     }
 
+    this._storageActionsBatchingTimeMs = 500;
+
+    if (this._sendStorageActionsBatchingTimer) 
+      clearTimeout(this._sendStorageActionsBatchingTimer);
+
     this._currentStorageActionsBatch = [];
 
-    this._unsubscribeFromAppStateChanges && this._unsubscribeFromAppStateChanges();
+    if (this._unsubscribeFromAppStateChanges) {
+      this._unsubscribeFromAppStateChanges();
+      this._unsubscribeFromAppStateChanges = undefined;
+    }
 
-    if (this._tanStackQueriesDataMonitorInterval !== null)
+    if (this._tanStackQueriesDataMonitorInterval)
       clearInterval(this._tanStackQueriesDataMonitorInterval);
 
-    this._unsubscribeFromTanStackQueryEvents && this._unsubscribeFromTanStackQueryEvents();
+    if (this._sendTanStackQueriesDataBatchingTimer)
+      clearTimeout(this._sendTanStackQueriesDataBatchingTimer);
+
+    this._currentTanStackQueriesDataCopy = null;
+      
+    if (this._unsubscribeFromTanStackQueryEvents) {
+      this._unsubscribeFromTanStackQueryEvents();
+      this._unsubscribeFromTanStackQueryEvents = undefined;
+    }
+
+    if (this._sendTanStackQueryEventsBatchingTimer)
+      clearTimeout(this._sendTanStackQueryEventsBatchingTimer);
+    
     this._currentTanStackQueryEventsBatch = [];
+    this._contextValueCopiesTable = {};
+    
+    for (const contextId of Object.keys(this._sendContextValueThrottleTimersTable))
+      if (this._sendContextValueThrottleTimersTable[contextId])
+        clearTimeout(this._sendContextValueThrottleTimersTable[contextId]!);
+
+    this._sendContextValueThrottleTimersTable = {};
 
     this.lastEvent = null;
     this._eventListenersTable = {};
