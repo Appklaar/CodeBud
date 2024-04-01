@@ -111,7 +111,7 @@ class Connector {
 
   private serveAllExternalListenersWithNewEvent(event: T.RemoteEvent) {
     this.lastEvent = event;
-    this._onEventUsersCustomCallback && this._onEventUsersCustomCallback(event);
+    this._onEventUsersCustomCallback?.(event);
 
     for (const key of Object.keys(this._eventListenersTable))
       this._eventListenersTable[key](event);
@@ -297,7 +297,8 @@ class Connector {
       withCredentials: true,
       path: CONFIG.SOCKET_PATH, 
       transports: ['websocket'],
-      query: {apiKey: this._apiKey}
+      query: {apiKey: this._apiKey},
+      reconnectionDelay: 3e3,
     });
 
     if (config?.Interceptor) {
@@ -316,10 +317,9 @@ class Connector {
       if (!data.isAdmin)
         return;
 
-      codebudConsoleLog("GUI Connected");
+      this._encryption?.setAdminPanelPublicKey(data.publicKey.data);
 
-      if (this._encryption)
-        this._encryption.setAdminPanelPublicKey(data.publicKey.data);
+      codebudConsoleLog("GUI Connected");
     });
 
     this._socket.on(SOCKET_EVENTS_LISTEN.EVENT, (event: T.RemoteEvent) => this._innerHandleEvent(event));
@@ -576,25 +576,19 @@ class Connector {
 
     this._encryption = null;
 
-    if (this._networkInterceptor) {
-      this._networkInterceptor.dispose();
-      this._networkInterceptor = null;
-    }
+    this._networkInterceptor?.dispose();
+    this._networkInterceptor = null;
 
     if (this._asyncStorageHandler) {
-      if (this._untrackAsyncStorage) {
-        this._untrackAsyncStorage();
-        this._untrackAsyncStorage = undefined;
-      }
+      this._untrackAsyncStorage?.();
+      this._untrackAsyncStorage = undefined;
       this._trackAsyncStorage = undefined;
       this._asyncStorageHandler = null;
     }
 
     if (this._localStorageHandler) {
-      if (this._untrackLocalStorage) {
-        this._untrackLocalStorage();
-        this._untrackLocalStorage = undefined;
-      }
+      this._untrackLocalStorage?.();
+      this._untrackLocalStorage = undefined;
       this._trackLocalStorage = undefined;
       this._localStorageHandler = null;
     }
@@ -606,10 +600,8 @@ class Connector {
 
     this._currentStorageActionsBatch = [];
 
-    if (this._unsubscribeFromAppStateChanges) {
-      this._unsubscribeFromAppStateChanges();
-      this._unsubscribeFromAppStateChanges = undefined;
-    }
+    this._unsubscribeFromAppStateChanges?.();
+    this._unsubscribeFromAppStateChanges = undefined;
 
     if (this._tanStackQueriesDataMonitorInterval)
       clearInterval(this._tanStackQueriesDataMonitorInterval);
@@ -619,10 +611,8 @@ class Connector {
 
     this._currentTanStackQueriesDataCopy = null;
       
-    if (this._unsubscribeFromTanStackQueryEvents) {
-      this._unsubscribeFromTanStackQueryEvents();
-      this._unsubscribeFromTanStackQueryEvents = undefined;
-    }
+    this._unsubscribeFromTanStackQueryEvents?.();
+    this._unsubscribeFromTanStackQueryEvents = undefined;
 
     if (this._sendTanStackQueryEventsBatchingTimer)
       clearTimeout(this._sendTanStackQueryEventsBatchingTimer);

@@ -45,7 +45,7 @@ class RemoteSettingsService {
       });
 
       this.onGotNewRemoteSettings(remoteSettings);
-      callbackFn && callbackFn(remoteSettings);
+      callbackFn?.(remoteSettings);
     } catch (e) {
       codebudConsoleWarn("Error while trying to fetch remote settings", e);
     }

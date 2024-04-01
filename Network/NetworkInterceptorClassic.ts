@@ -94,8 +94,7 @@ class NetworkInterceptorClassic extends NetworkInterceptorApi {
   };
 
   public dispose() {
-    if (this._interceptor)
-      this._interceptor.dispose();
+    this._interceptor?.dispose();
   };
 };
 
