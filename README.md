@@ -7,6 +7,8 @@ JavaScript package for remote app testing & debugging
 * Network requests monitoring
 * Redux state observer + action monitor
 * Zustand state observer
+* TanStack query observer
+* React contexts monitoring
 * Storage actions monitoring
 * Feature management
 * Built-in temporary mail service
@@ -30,7 +32,7 @@ yarn add @appklaar/codebud
 ## Quick Links
 
 * [Graphical User Interface (website)](https://codebud.io/)
-* [Documentation](https://appklaar.gitbook.io/codebud/)
+* [Documentation](https://docs.codebud.io/)
 * [Contact us](https://t.me/appklaar)
 
 ## Authors
