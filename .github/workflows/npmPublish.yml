@@ -4,8 +4,8 @@ on:
   push:
     branches:
       - 'main'
-    # paths-ignore:
-    #   - '.github/workflows/*' # не запускать воркфлоу при обновлении самих воркфлоу
+    paths-ignore:
+      - '.github/workflows/*' # не запускать воркфлоу при обновлении самих воркфлоу
 env:
   NPM_VERSION_MODIFIER: patch
   NODE_VERSION: 18.11.0
@@ -22,6 +22,8 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - name: Install node modules
         run: yarn
+      - name: Test package
+        run: yarn run test
       - name: Clean previous build
         run: yarn clean
       - name: Make build
