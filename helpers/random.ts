@@ -1,5 +1,8 @@
 // short random string for ids - not guaranteed to be unique
 const randomId = function(length = 8) {
+  if (length > 10)
+    throw new Error("randomId max length is 10.");
+
   return Math.random().toString(36).substring(2, length + 2);
 };
 
