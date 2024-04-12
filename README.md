@@ -31,7 +31,7 @@ yarn add @appklaar/codebud
 
 ## Quick Links
 
-* [Graphical User Interface (website)](https://codebud.io/)
+* [Graphical User Interface (website)](https://app.codebud.io/)
 * [Documentation](https://docs.codebud.io/)
 * [Contact us](https://t.me/appklaar)
 
