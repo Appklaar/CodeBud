@@ -34,8 +34,8 @@ yarn add @appklaar/codebud
 * [CodeBud website](https://codebud.io/)
 * [Graphical User Interface (website)](https://app.codebud.io/)
 * [Documentation](https://docs.codebud.io/)
-* [Contact us](https://t.me/appklaar)
+* [Contact us](https://t.me/codebudio)
 
 ## Authors
 
-* **AppKlaar** - *Idea & Development* - [Organization](https://www.appklaar.com/)
+* **AppKlaar** - *Idea & Development* - [Organization](https://github.com/Appklaar)
