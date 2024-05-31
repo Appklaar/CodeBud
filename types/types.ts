@@ -169,7 +169,9 @@ export type EventListenersTable = ListenersTable<RemoteEvent>;
 
 export type SelectFn = (state: any) => any;
 
-export type RemoteSettings = ObjectT<string>;
+export type RemoteSettingsEnv = "dev" | "stg" | "prod";
+
+export type RemoteSettings = {[env in RemoteSettingsEnv]: ObjectT<string>};
 
 export type RemoteSettingsListenersTable = ListenersTable<RemoteSettings>;
 

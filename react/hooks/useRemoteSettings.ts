@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { RemoteSettings } from '../../types/types';
+import { ObjectT, RemoteSettings, RemoteSettingsEnv } from '../../types/types';
 import { remoteSettingsService } from "./../../services/remoteSettingsService";
 import { getId } from './../../helpers/random';
 
-export const useRemoteSettings = (): RemoteSettings | null => {
+export const useRemoteSettings = (env: RemoteSettingsEnv): ObjectT<string> | null => {
   const [remoteSettings, setRemoteSettings] = useState<RemoteSettings | null>(remoteSettingsService.remoteSettings);
 
   // ComponentDidMount
@@ -22,5 +22,5 @@ export const useRemoteSettings = (): RemoteSettings | null => {
     };
   }, []);
 
-  return remoteSettings;
+  return remoteSettings?.[env] ?? null;
 };

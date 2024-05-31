@@ -117,7 +117,9 @@ declare module '@appklaar/codebud' {
   
   export type SelectFn = (state: any) => any;
   
-  export type RemoteSettings = ObjectT<string>;
+  export type RemoteSettingsEnv = "dev" | "stg" | "prod";
+
+  export type RemoteSettings = {[env in RemoteSettingsEnv]: ObjectT<string>};
   
   export type RemoteSettingsListenersTable = ListenersTable<RemoteSettings>;
   
@@ -149,9 +151,14 @@ declare module '@appklaar/codebud' {
      */
     state: string;
     /**
-     * @returns {RemoteSettings | null} Last fetched remote settings object.
+     * @returns {RemoteSettings | null} Last fetched remote settings object (all environments).
      */
     remoteSettings: RemoteSettings | null;
+    /**
+     * @param {string} env Remote settings environment.
+     * @returns {ObjectT<string> | null} Last fetched remote settings object (selected environment).
+     */
+    getRemoteSettingsByEnv: (env: RemoteSettingsEnv) => ObjectT<string> | null,
     /**
      * Function for refreshing remote settings.
      * @param {RefreshRemoteSettingsCallback} callbackFn Function that will be called if request succeeded.
@@ -223,6 +230,8 @@ declare module '@appklaar/codebud' {
 }
 
 declare module '@appklaar/codebud/react' {
+  export type ObjectT<T> = {[key: string]: T};
+
   export type RemoteEvent = {
     id: string;
     eventType: "default" | "special";
@@ -230,14 +239,16 @@ declare module '@appklaar/codebud/react' {
     args?: any[];
   };
 
-  export type RemoteSettings = {[key: string]: string};
+  export type RemoteSettingsEnv = "dev" | "stg" | "prod";
+
+  export type RemoteSettings = {[env in RemoteSettingsEnv]: ObjectT<string>};
 
   export function useEvent(
     handler: (event: RemoteEvent) => any, 
     instructionIds: ReadonlyArray<string>
   ): void;
 
-  export function useRemoteSettings(): RemoteSettings | null;
+  export function useRemoteSettings(env: RemoteSettingsEnv): ObjectT<string> | null;
 
   export function useContextMonitor(
     SomeContext: any, 

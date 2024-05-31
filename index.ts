@@ -1,5 +1,5 @@
 import { connector } from './Connector';
-import { Instruction, OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettings } from './types';
+import { Instruction, OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettings, RemoteSettingsEnv } from './types';
 import { MODULE_STATES } from './States';
 import { EXISTING_SPECIAL_INSTRUCTION_IDS } from './constants/events';
 import { validateApiKey } from './constants/regex';
@@ -90,16 +90,20 @@ export const CodeBud: ModuleInterface = {
     this._onEventUsersCustomCallback = cb;
   },
 
-  get isInit(): boolean {
+  get isInit() {
 		return !!this._apiKey && connector.isInit;
 	},
 
-  get state(): string {
+  get state() {
     return `Current state is ${this._currentState}. ${MODULE_STATES[this._currentState]}`;
   },
 
-  get remoteSettings(): RemoteSettings | null {
+  get remoteSettings() {
     return remoteSettingsService.remoteSettings;
+  },
+
+  getRemoteSettingsByEnv(env: RemoteSettingsEnv) {
+    return remoteSettingsService.remoteSettings?.[env] ?? null;
   },
 
   async refreshRemoteSettings(callbackFn?: RefreshRemoteSettingsCallback) {
