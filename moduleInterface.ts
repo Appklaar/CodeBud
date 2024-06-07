@@ -2,7 +2,6 @@ import { OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettin
 import { ModuleState } from './States';
 
 export interface AppKlaarSdk {
-  _apiKey: null | string;
   _mode: PackageMode;
   _currentState: ModuleState;
   _onEventUsersCustomCallback: OnEventUsersCustomCallback;

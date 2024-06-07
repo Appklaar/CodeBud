@@ -274,7 +274,24 @@ declare module '@appklaar/codebud/Network/NetworkInterceptorXHR' {
 }
 
 declare module '@appklaar/codebud/rn' {
+  type ReactFunctionalComponent<T> = (props: T) => any | null;
+
+  export type InitModalProps = {
+    onInit: (apiKey: string) => void;
+  };
+
+  export type ReactNativeWrapperProps = {
+    children: any;
+    initModalProps?: InitModalProps;
+  }
+
+  export type ReactNativeWrapperMethods = {
+    showInitModal: () => void;
+    hideInitModal: () => void;
+  };
+
   export const ReactNativePlugin: any;
+  export const ReactNativeWrapper: ReactFunctionalComponent<ReactNativeWrapperProps>;
 }
 
 declare module '@appklaar/codebud/encryption' {

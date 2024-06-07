@@ -2,6 +2,8 @@ import { AppState, Platform } from 'react-native';
 import { StartNetworkLoggingOptions } from './types';
 import logger from './loggerSingleton';
 
+export { Wrapper as ReactNativeWrapper } from "./components/Wrapper/Wrapper";
+
 export const startNetworkLogging = (options?: StartNetworkLoggingOptions) => {
   logger.enableXHRInterception(options);
 };

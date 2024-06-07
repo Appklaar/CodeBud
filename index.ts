@@ -1,19 +1,17 @@
 import { connector } from './Connector';
-import { Instruction, OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettings, RemoteSettingsEnv } from './types';
+import { OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettingsEnv } from './types';
 import { MODULE_STATES } from './States';
-import { EXISTING_SPECIAL_INSTRUCTION_IDS } from './constants/events';
 import { validateApiKey } from './constants/regex';
 import { AppKlaarSdk as ModuleInterface } from './moduleInterface';
 import { CONFIG } from './config';
 import { codebudConsoleWarn } from './helpers/helperFunctions';
-import { prepareInstructionsFromGroup } from './helpers/instructionsHelpers';
+import { prepareInstructionsFromInstructionsAndGroups, validateInstructions } from './helpers/instructionsHelpers';
 import { updateAuthorizationHeaderWithApiKey } from './api/api';
 import { remoteSettingsService } from './services/remoteSettingsService';
 
 export type { Instruction, InstructionGroup } from './types/types';
 
 export const CodeBud: ModuleInterface = {
-  _apiKey : null,
   _mode: "dev",
   _currentState: "NOT_INITIATED",
   _onEventUsersCustomCallback: () => {},
@@ -30,48 +28,16 @@ export const CodeBud: ModuleInterface = {
       return;
     }
 
-    // Из переданного массива инструкций и групп инструкций формируется чистый массив инструкций
-    const processedInstructions: Instruction[] = [];
+    const processedInstructions = prepareInstructionsFromInstructionsAndGroups(instructions);
 
-    for (let el of instructions) {
-      if ("groupId" in el) { // el is InstructionGroup
-        processedInstructions.push(...prepareInstructionsFromGroup(el));
-      } else { // el is Instruction
-        processedInstructions.push(el);
-      }
+    const validationResult = validateInstructions(processedInstructions);
+    if (!validationResult.ok) {
+      codebudConsoleWarn(validationResult.message);
+      this._currentState = "INVALID_PARAMETERS";
+      return;
     }
 
-    // Валидация инструкций
-    // В т.ч. проверка на коллизии id(шников)
-    const instructionIds = new Set<string>();
-    const instructionPrototypes = new Set<string>();
-    for (let el of processedInstructions) {
-      if (EXISTING_SPECIAL_INSTRUCTION_IDS.has(el.id as any)) {
-        codebudConsoleWarn(`Instruction id: ${el.id} is reserved for special instruction. You should change it for something else.`);
-        this._currentState = "INVALID_PARAMETERS";
-        return;
-      }
-
-      if (instructionIds.has(el.id)) {
-        codebudConsoleWarn(`Duplicate instruction id passed; InstructionId: ${el.id}`);
-        this._currentState = "INVALID_PARAMETERS";
-        return;
-      } else {
-        instructionIds.add(el.id);
-      }
-
-      if (el.handler.length > 1) {
-        codebudConsoleWarn(`Instruction id: ${el.id} handler takes ${el.handler.length} args. Your handler should accept max 1 object as arguement. Number of fields is not limited.`);
-        this._currentState = "INVALID_PARAMETERS";
-        return;
-      }
-
-      if (el.prototype)
-        instructionPrototypes.add(el.prototype);
-    }
-
-    this._apiKey = apiKey;
-    updateAuthorizationHeaderWithApiKey(this._apiKey);
+    updateAuthorizationHeaderWithApiKey(apiKey);
     if (config?.projectInfo) {
       remoteSettingsService.init(config.projectInfo.projectId, config.remoteSettingsAutoUpdateInterval);
     }
@@ -91,7 +57,7 @@ export const CodeBud: ModuleInterface = {
   },
 
   get isInit() {
-		return !!this._apiKey && connector.isInit;
+		return connector.isInit;
 	},
 
   get state() {
@@ -215,7 +181,6 @@ export const CodeBud: ModuleInterface = {
     this._mode = "dev";
     connector.isInit && connector.disconnect();
     remoteSettingsService.clear();
-    this._apiKey = null;
     updateAuthorizationHeaderWithApiKey("");
     this._currentState = "NOT_INITIATED";
     this._onEventUsersCustomCallback = () => {};

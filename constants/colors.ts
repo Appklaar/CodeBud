@@ -11,8 +11,15 @@ const magicMint = "#B5EAD7";
 const blueYonder = "#536CB0";
 const buff = "#F3D67F";
 const palmLeaf = "#648C49";
+const white = "#ffffff";
+const azure = "#007AFF";
+const emperor = "#555555";
+const dustyGray = "#999999";
+const gallery = "#eaeaea";
+const flamingo = "#f24646";
+const red = "#ff0000";
 
-export const COLORS = [
+export const INSTRUCTION_GROUP_COLORS = [
   caramel,
   peach,
   thistle,
@@ -27,3 +34,26 @@ export const COLORS = [
   buff,
   palmLeaf
 ];
+
+export const COLORS = {
+  caramel,
+  peach,
+  thistle,
+  bluebell,
+  nyanza,
+  powderBlue,
+  floralWhite,
+  peachOrange,
+  salmonPink,
+  magicMint,
+  blueYonder,
+  buff,
+  palmLeaf,
+  white,
+  azure,
+  emperor,
+  dustyGray,
+  gallery,
+  flamingo,
+  red
+};
