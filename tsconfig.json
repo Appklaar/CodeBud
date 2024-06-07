@@ -10,6 +10,7 @@
     "sourceMap": false,
     "noImplicitAny": false,
     "noEmitOnError": true,
-    "outDir": "build"
+    "outDir": "build",
+    "jsx": "react-jsx"
   }
 }
