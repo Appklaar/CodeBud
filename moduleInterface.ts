@@ -1,4 +1,4 @@
-import { OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettings, PackageConfig, Instruction, InstructionGroup, PackageMode } from './types/types';
+import { OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettings, PackageConfig, Instruction, InstructionGroup, PackageMode, ObjectT, RemoteSettingsEnv } from './types/types';
 import { ModuleState } from './States';
 
 export interface AppKlaarSdk {
@@ -27,9 +27,14 @@ export interface AppKlaarSdk {
    */
   state: string;
   /**
-   * @returns {RemoteSettings | null} Last fetched remote settings object.
+   * @returns {RemoteSettings | null} Last fetched remote settings object (all environments).
    */
   remoteSettings: RemoteSettings | null;
+  /**
+   * @param {string} env Remote settings environment.
+   * @returns {ObjectT<string> | null} Last fetched remote settings object (selected environment).
+   */
+  getRemoteSettingsByEnv: (env: RemoteSettingsEnv) => ObjectT<string> | null,
   /**
    * Function for refreshing remote settings.
    * @param {RefreshRemoteSettingsCallback} callbackFn Function that will be called if request succeeded.

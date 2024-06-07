@@ -1,4 +1,4 @@
-# @appklaar/codebud
+# @appklaar/codebud [![npm version](https://img.shields.io/npm/v/@appklaar/codebud.svg?style=flat)](https://www.npmjs.com/package/@appklaar/codebud)
 
 JavaScript package for remote app testing & debugging
 
