@@ -1,0 +1,38 @@
+name: NPM alpha version workflow
+on: 
+  workflow_dispatch:
+  push:
+    branches:
+      - 'alpha'
+    paths-ignore:
+      - '.github/workflows/*' # не запускать воркфлоу при обновлении самих воркфлоу
+env:
+  NPM_VERSION_MODIFIER: prepatch
+  NODE_VERSION: 18.11.0
+jobs:
+  Prepare_and_publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get repository code
+        uses: actions/checkout@v4
+      - name: Setup .npmrc file to publish to npm
+        uses: actions/setup-node@v3
+        with:
+          node-version: '${{ env.NODE_VERSION }}'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Install node modules
+        run: yarn
+      - name: Test package
+        run: yarn run test
+      - name: Clean previous build
+        run: yarn clean
+      - name: Make build
+        run: yarn build
+      - name: Update build TS Declaration file
+        run: cp ./index.d.ts ./build
+      - name: Update build GitHub README.md file
+        run: cp ./README.md ./build
+      - name: Go to build folder & publish new version to NPM
+        run: cd build && npm version --no-git-tag-version $(npm view @appklaar/codebud@alpha version) && npm version --no-git-tag-version ${{ env.NPM_VERSION_MODIFIER }} && npm publish --tag alpha
+        env: 
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
