@@ -325,3 +325,49 @@ declare module '@appklaar/codebud/rn' {
 declare module '@appklaar/codebud/encryption' {
   export class EncryptionPlugin {}
 }
+
+declare module '@appklaar/codebud/StackTracing/getStackTraceStackTracey' {
+  export type StackTraceCallData = {
+    sourceLine?: string;
+    beforeParse: string;
+    callee: string;
+    calleeShort?: string;
+    native: boolean;
+    file?: string;
+    fileRelative?: string;
+    fileShort?: string;
+    fileName?: string;
+    line?: number;
+  };
+  
+  export type StackTraceData = {
+    stack?: StackTraceCallData[];
+  };
+  
+  export type GetStackTraceFunction = (errorOrStack: Error | string | undefined) => Promise<StackTraceData>;
+
+  export const getStackTraceStackTracey: GetStackTraceFunction;
+}
+
+declare module '@appklaar/codebud/StackTracing/getStackTraceSimple' {
+  export type StackTraceCallData = {
+    sourceLine?: string;
+    beforeParse: string;
+    callee: string;
+    calleeShort?: string;
+    native: boolean;
+    file?: string;
+    fileRelative?: string;
+    fileShort?: string;
+    fileName?: string;
+    line?: number;
+  };
+  
+  export type StackTraceData = {
+    stack?: StackTraceCallData[];
+  };
+  
+  export type GetStackTraceFunction = (errorOrStack: Error | string | undefined) => Promise<StackTraceData>;
+
+  export const getStackTraceSimple: GetStackTraceFunction;
+}

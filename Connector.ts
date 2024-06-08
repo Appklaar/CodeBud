@@ -372,7 +372,7 @@ class Connector {
     if (this._socket?.connected) {
       const timestamp = moment().valueOf();
       const actionId = this._currentInterceptedReduxActionId++;
-      const _stackTraceData = this._getStackTraceFn ? (await this._getStackTraceFn(new Error(''))) : undefined;
+      const _stackTraceData = await this._getStackTraceFn?.(new Error(''));
       const reduxActionData = {actionId: `RA_${actionId}`, action, timestamp, _stackTraceData};
       jsonStringifyKeepMeta(reduxActionData).ok && this._currentReduxActionsBatch.push(reduxActionData);
 
@@ -415,7 +415,7 @@ class Connector {
     if (this._socket?.connected) {
       const timestamp = moment().valueOf();
       const storageActionId = this._currentInterceptedStorageActionId++;
-      const _stackTraceData = this._getStackTraceFn ? (await this._getStackTraceFn(new Error(''))) : undefined;
+      const _stackTraceData = await this._getStackTraceFn?.(new Error(''));
       const storageActionData = {storageActionId: `SA_${storageActionId}`, action, data, timestamp, _stackTraceData};
       jsonStringifyKeepMeta(storageActionData).ok && this._currentStorageActionsBatch.push(storageActionData);
 
@@ -453,7 +453,7 @@ class Connector {
       const timestamp = moment().valueOf();
       const capturedEventId = this._currentCapturedEventId++;
 
-      const _stackTraceData = this._getStackTraceFn ? (await this._getStackTraceFn(new Error(''))) : undefined;
+      const _stackTraceData = await this._getStackTraceFn?.(new Error(''));
 
       const encryptedData = this._encryptData({timestamp, capturedEventId: `UCE_${capturedEventId}`, title, data, _stackTraceData});
       encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.CAPTURE_EVENT, encryptedData.result);
@@ -540,7 +540,7 @@ class Connector {
     if (this._socket?.connected) {
       const timestamp = moment().valueOf();
       const tanStackQueryEventId = this._currentInterceptedTanStackQueryEventId++;
-      // const _stackTraceData = this._getStackTraceFn ? (await this._getStackTraceFn(new Error(''))) : undefined;
+      // const _stackTraceData = await this._getStackTraceFn?.(new Error(''));
       const tanStackQueryEventData: T.InterceptedTanStackQueryEventPreparedData = {tanStackQueryEventId: `TQE_${tanStackQueryEventId}`, event, timestamp};
       jsonStringifyKeepMeta(tanStackQueryEventData).ok && this._currentTanStackQueryEventsBatch.push(tanStackQueryEventData);
 
