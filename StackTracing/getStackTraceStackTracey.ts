@@ -1,11 +1,12 @@
+import { GetStackTraceFunction } from "../types";
 import { getEnvironmentPlatform } from "../helpers/platform";
-import { StackTraceData } from "../types";
+import { codebudConsoleWarn } from "../helpers/helperFunctions";
+import { CONFIG } from "../config";
 import { CALLEE_EXCLUDE, FILE_NAME_EXCLUDE } from "./constants";
 import { filterStack, prepareStack } from "./stackTraceyHelpers";
-import { parseRawStack, filterStack as filterSimpleStack, prepareStack as prepareSimpleStack } from "./simpleTracing";
 import StackTracey from 'stacktracey';
 
-export const getStackTrace = async (errorOrStack: Error | string | undefined): Promise<StackTraceData> => {
+export const getStackTraceStackTracey: GetStackTraceFunction = async (errorOrStack) => {
   const environmentPlatform = getEnvironmentPlatform();
   const stackStr = (errorOrStack instanceof Error) ? errorOrStack.stack : errorOrStack;
 
@@ -29,11 +30,8 @@ export const getStackTrace = async (errorOrStack: Error | string | undefined): P
       return { stack: preparedStack };
     }
     case "react-native": {
-      const stack = parseRawStack(stackStr);
-      const filteredStack = filterSimpleStack(stack, CALLEE_EXCLUDE, FILE_NAME_EXCLUDE);
-      const preparedStack = prepareSimpleStack(filteredStack);
-
-      return { stack: preparedStack };
+      codebudConsoleWarn(`getStackTraceStackTracey function does not work for this platform: ${environmentPlatform}. Consider reading ${CONFIG.PRODUCT_NAME} docs.`);
+      return { stack: [] };
     }
   }
-}
+};

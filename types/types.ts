@@ -9,20 +9,6 @@ export type ProjectInfo = {
 
 export type PackageMode = "dev" | "prod";
 
-export type PackageConfig = {
-  mode?: PackageMode;
-  Interceptor?: any;
-  EncryptionPlugin?: any;
-  ReactNativePlugin?: any;
-  projectInfo?: ProjectInfo;
-  remoteSettingsAutoUpdateInterval?: number;
-  enableStackTracing?: boolean;
-};
-
-export type NetworkInterceptorInstance = {
-  dispose: () => void;
-};
-
 export type StackTraceCallData = {
   sourceLine?: string;
   beforeParse: string;
@@ -38,6 +24,22 @@ export type StackTraceCallData = {
 
 export type StackTraceData = {
   stack?: StackTraceCallData[];
+};
+
+export type GetStackTraceFunction = (errorOrStack: Error | string | undefined) => Promise<StackTraceData>;
+
+export type PackageConfig = {
+  mode?: PackageMode;
+  Interceptor?: any;
+  EncryptionPlugin?: any;
+  ReactNativePlugin?: any;
+  projectInfo?: ProjectInfo;
+  remoteSettingsAutoUpdateInterval?: number;
+  getStackTraceFn?: GetStackTraceFunction;
+};
+
+export type NetworkInterceptorInstance = {
+  dispose: () => void;
 };
 
 export type WithStackTrace<T> = T & {

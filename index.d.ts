@@ -7,6 +7,25 @@ declare module '@appklaar/codebud' {
 
   export type PackageMode = "dev" | "prod";
 
+  export type StackTraceCallData = {
+    sourceLine?: string;
+    beforeParse: string;
+    callee: string;
+    calleeShort?: string;
+    native: boolean;
+    file?: string;
+    fileRelative?: string;
+    fileShort?: string;
+    fileName?: string;
+    line?: number;
+  };
+  
+  export type StackTraceData = {
+    stack?: StackTraceCallData[];
+  };
+  
+  export type GetStackTraceFunction = (errorOrStack: Error | string | undefined) => Promise<StackTraceData>;
+
   export type PackageConfig = {
     mode?: PackageMode;
     Interceptor?: any;
@@ -14,7 +33,7 @@ declare module '@appklaar/codebud' {
     ReactNativePlugin?: any;
     projectInfo?: ProjectInfo;
     remoteSettingsAutoUpdateInterval?: number;
-    enableStackTracing?: boolean;
+    getStackTraceFn?: GetStackTraceFunction;
   };
   
   export type NetworkInterceptorInstance = {
