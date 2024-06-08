@@ -26,7 +26,12 @@ export type StackTraceData = {
   stack?: StackTraceCallData[];
 };
 
-export type GetStackTraceFunction = (errorOrStack: Error | string | undefined) => Promise<StackTraceData>;
+export type GetStackTraceFunctionOptions = {
+  calleeExclude?: string[];
+  fileNameExclude?: string[];
+};
+
+export type GetStackTraceFunction = (errorOrStack: Error | string | undefined, options?: GetStackTraceFunctionOptions) => Promise<StackTraceData>;
 
 export type PackageConfig = {
   mode?: PackageMode;
@@ -36,6 +41,7 @@ export type PackageConfig = {
   projectInfo?: ProjectInfo;
   remoteSettingsAutoUpdateInterval?: number;
   getStackTraceFn?: GetStackTraceFunction;
+  stackTraceOptions?: GetStackTraceFunctionOptions;
 };
 
 export type NetworkInterceptorInstance = {

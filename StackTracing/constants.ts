@@ -5,6 +5,7 @@ export const CALLEE_EXCLUDE = [
   'Object.invokeGuardedCallbackDev',
   'invokeGuardedCallback',
   'invokeGuardedCallbackAndCatchFirstError',
+  'invokeGuardedCallbackProd',
   'executeDispatch',
   'processDispatchQueueItemsInOrder',
   'processDispatchQueue',

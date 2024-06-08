@@ -25,6 +25,7 @@ class Connector {
   private _apiKey: string = "";
   private _projectInfo: T.ProjectInfo | null = null;
   private _getStackTraceFn: T.GetStackTraceFunction | undefined;
+  private _stackTraceOptions: T.GetStackTraceFunctionOptions | undefined;
   private _instructionsTable: T.InstructionsTable = {};
   private _onEventUsersCustomCallback: T.OnEventUsersCustomCallback | undefined;
   private _networkInterceptor: T.NetworkInterceptorInstance | null = null;
@@ -275,6 +276,8 @@ class Connector {
       this._projectInfo = config.projectInfo;
     if (config?.getStackTraceFn)
       this._getStackTraceFn = config.getStackTraceFn;
+    if (config?.stackTraceOptions)
+      this._stackTraceOptions = config.stackTraceOptions;
 
     this._connectionInfoPacket = {
       apiKey,
@@ -372,7 +375,7 @@ class Connector {
     if (this._socket?.connected) {
       const timestamp = moment().valueOf();
       const actionId = this._currentInterceptedReduxActionId++;
-      const _stackTraceData = await this._getStackTraceFn?.(new Error(''));
+      const _stackTraceData = await this._getStackTraceFn?.(new Error(''), this._stackTraceOptions);
       const reduxActionData = {actionId: `RA_${actionId}`, action, timestamp, _stackTraceData};
       jsonStringifyKeepMeta(reduxActionData).ok && this._currentReduxActionsBatch.push(reduxActionData);
 
@@ -415,7 +418,7 @@ class Connector {
     if (this._socket?.connected) {
       const timestamp = moment().valueOf();
       const storageActionId = this._currentInterceptedStorageActionId++;
-      const _stackTraceData = await this._getStackTraceFn?.(new Error(''));
+      const _stackTraceData = await this._getStackTraceFn?.(new Error(''), this._stackTraceOptions);
       const storageActionData = {storageActionId: `SA_${storageActionId}`, action, data, timestamp, _stackTraceData};
       jsonStringifyKeepMeta(storageActionData).ok && this._currentStorageActionsBatch.push(storageActionData);
 
@@ -453,7 +456,7 @@ class Connector {
       const timestamp = moment().valueOf();
       const capturedEventId = this._currentCapturedEventId++;
 
-      const _stackTraceData = await this._getStackTraceFn?.(new Error(''));
+      const _stackTraceData = await this._getStackTraceFn?.(new Error(''), this._stackTraceOptions);
 
       const encryptedData = this._encryptData({timestamp, capturedEventId: `UCE_${capturedEventId}`, title, data, _stackTraceData});
       encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.CAPTURE_EVENT, encryptedData.result);
@@ -469,7 +472,7 @@ class Connector {
 
       let _stackTraceData;
       if (((data instanceof Error) || data?.stack) && this._getStackTraceFn)
-        _stackTraceData = await this._getStackTraceFn(data.stack);
+        _stackTraceData = await this._getStackTraceFn(data.stack, this._stackTraceOptions);
 
       const encryptedData = this._encryptData({timestamp, crashReportId: `ACR_${crashReportId}`, type, data, _stackTraceData});
       encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.CAPTURE_CRASH_REPORT, encryptedData.result);
@@ -540,7 +543,7 @@ class Connector {
     if (this._socket?.connected) {
       const timestamp = moment().valueOf();
       const tanStackQueryEventId = this._currentInterceptedTanStackQueryEventId++;
-      // const _stackTraceData = await this._getStackTraceFn?.(new Error(''));
+      // const _stackTraceData = await this._getStackTraceFn?.(new Error(''), this._stackTraceOptions);
       const tanStackQueryEventData: T.InterceptedTanStackQueryEventPreparedData = {tanStackQueryEventId: `TQE_${tanStackQueryEventId}`, event, timestamp};
       jsonStringifyKeepMeta(tanStackQueryEventData).ok && this._currentTanStackQueryEventsBatch.push(tanStackQueryEventData);
 
@@ -594,6 +597,7 @@ class Connector {
     this._apiKey = "";
     this._projectInfo = null;
     this._getStackTraceFn = undefined;
+    this._stackTraceOptions = undefined;
     this._instructionsTable = {};
     this._onEventUsersCustomCallback = undefined;
     this._connectionInfoPacket = undefined;
