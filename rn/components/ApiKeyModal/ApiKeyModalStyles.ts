@@ -4,7 +4,15 @@ import { COLORS } from "./../../../constants/colors";
 export const s = StyleSheet.create({
   modalContainer: {
     flex: 1,
-    justifyContent: 'flex-end'
+    justifyContent: 'flex-end',
+    shadowColor: COLORS.black,
+    shadowOffset: {
+      width: 0,
+      height: -12,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 11
   },
   contentContainer: {
     height: '75%',

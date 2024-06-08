@@ -3,10 +3,12 @@ import { ApiKeyModal } from "./../ApiKeyModal/ApiKeyModal";
 import { codebudConsoleWarn } from './../../../helpers/helperFunctions';
 
 type InitModalProps = {
+  animationType?: "fade" | "none" | "slide";
   onInit: (apiKey: string) => void;
 };
 
 type WrapperProps = {
+  ref?: any;
   children: any;
   initModalProps?: InitModalProps;
 };
@@ -47,6 +49,7 @@ const Wrapper: React.FC<WrapperProps> = forwardRef(({
       {children}
 
       <ApiKeyModal 
+        animationType={initModalProps?.animationType}
         visible={apiKeyModalVisible}
         onClose={() => setApiKeyModalVisible(false)}
         onApiKeyEntered={(key) => handleInitWithApiKey(key)}

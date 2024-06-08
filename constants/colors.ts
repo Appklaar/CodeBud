@@ -18,6 +18,7 @@ const dustyGray = "#999999";
 const gallery = "#eaeaea";
 const flamingo = "#f24646";
 const red = "#ff0000";
+const black = "#000000";
 
 export const INSTRUCTION_GROUP_COLORS = [
   caramel,
@@ -55,5 +56,6 @@ export const COLORS = {
   dustyGray,
   gallery,
   flamingo,
-  red
+  red,
+  black
 };

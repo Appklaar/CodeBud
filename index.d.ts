@@ -277,10 +277,12 @@ declare module '@appklaar/codebud/rn' {
   type ReactFunctionalComponent<T> = (props: T) => any | null;
 
   export type InitModalProps = {
+    animationType?: "fade" | "none" | "slide";
     onInit: (apiKey: string) => void;
   };
 
   export type ReactNativeWrapperProps = {
+    ref?: any;
     children: any;
     initModalProps?: InitModalProps;
   }
