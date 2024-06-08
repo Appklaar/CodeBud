@@ -16,7 +16,9 @@ export const CALLEE_EXCLUDE = [
   'trace',
   'logger.ts',
   'unstable_runWithPriority',
-  'Object.captureEvent'
+  'Object.captureEvent',
+  'codebudHandleDispatchedReduxAction',
+  '_handleInterceptedStorageAction'
 ];
 
 export const FILE_NAME_EXCLUDE = [

@@ -371,7 +371,8 @@ class Connector {
     }
   }
 
-  public async handleDispatchedReduxAction(action: T.InterceptedReduxAction, batchingTimeMs: number) {
+  // Method name starts with codebud in order to filter it from stacktrace
+  public async codebudHandleDispatchedReduxAction(action: T.InterceptedReduxAction, batchingTimeMs: number) {
     if (this._socket?.connected) {
       const timestamp = moment().valueOf();
       const actionId = this._currentInterceptedReduxActionId++;

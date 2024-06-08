@@ -93,7 +93,7 @@ export const CodeBud: ModuleInterface = {
   createReduxActionMonitorMiddleware(batchingTimeMs = 200) {
     return () => (next: any) => (action: any) => {
       if (connector.isInit)
-        connector.handleDispatchedReduxAction(action, batchingTimeMs);
+        connector.codebudHandleDispatchedReduxAction(action, batchingTimeMs);
 
       return next(action);
     }
