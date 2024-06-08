@@ -4,7 +4,13 @@ import { COLORS } from "./../../../constants/colors";
 export const s = StyleSheet.create({
   modalContainer: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-end'
+  },
+  contentContainer: {
+    height: '75%',
+    backgroundColor: COLORS.gallery,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     shadowColor: COLORS.black,
     shadowOffset: {
       width: 0,
@@ -13,12 +19,6 @@ export const s = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 11
-  },
-  contentContainer: {
-    height: '75%',
-    backgroundColor: COLORS.gallery,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28
   },
   modalHeader: {
     flexDirection: 'row',
