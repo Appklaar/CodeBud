@@ -149,6 +149,15 @@ export const CodeBud: ModuleInterface = {
     }
   },
 
+  enableApplicationCrashInterception() {
+    try {
+      connector.enableApplicationCrashInterception();
+    } catch (e) {
+      if (this._mode === "dev")
+        codebudConsoleWarn(e);
+    }
+  },
+
   monitorTanStackQueriesData(queryClient, updateIntervalMs = 1000, batchingTimeMs = 500) {
     try {
       if (!connector.isInit)

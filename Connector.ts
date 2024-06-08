@@ -4,13 +4,15 @@ import { EventHandleError, ScenarioHandleError } from './Errors';
 import { SOCKET_EVENTS_LISTEN, SOCKET_EVENTS_EMIT } from './api/api';
 import { SPECIAL_INSTRUCTIONS_TABLE, SPECIAL_INSTRUCTIONS } from './constants/events';
 import { io, Socket } from "socket.io-client";
-import { codebudConsoleLog, codebudConsoleWarn, jsonStringifyKeepMeta, stringifyIfNotString } from './helpers/helperFunctions';
+import { codebudConsoleLog, codebudConsoleWarn, jsonStringifyKeepMeta, stringifyIfNotString, errorToJSON } from './helpers/helperFunctions';
 import { getProcessEnv } from './helpers/environment';
 import { getBrowserInfo } from './helpers/browserInfo';
+import { getEnvironmentPlatform } from './helpers/platform';
 import { getOS } from './helpers/os';
 import { remoteSettingsService } from './services/remoteSettingsService';
 import { asyncStoragePlugin } from './asyncStorage/asyncStorage';
 import { localStoragePlugin } from './localStorage/localStorage';
+import { getStackTrace } from './StackTracing';
 import moment from 'moment';
 
 class Connector {
@@ -18,10 +20,12 @@ class Connector {
   private _currentInterceptedReduxActionId = 0;
   private _currentInterceptedStorageActionId = 0;
   private _currentCapturedEventId = 0;
+  private _currentCrashReportId = 0;
   private _currentInterceptedTanStackQueryEventId = 0;
   private _connectorInitiated: boolean = false;
   private _apiKey: string = "";
   private _projectInfo: T.ProjectInfo | null = null;
+  private _enableStackTracing: boolean = false;
   private _instructionsTable: T.InstructionsTable = {};
   private _onEventUsersCustomCallback: T.OnEventUsersCustomCallback | undefined;
   private _networkInterceptor: T.NetworkInterceptorInstance | null = null;
@@ -91,22 +95,12 @@ class Connector {
   };
   
   private _fillInstructionsTable(instructions: T.Instruction[]) {
-    const table: T.InstructionsTable = {};
-
-    instructions.forEach((ins: T.Instruction) => {
-      table[ins.id] = ins;
-    });
-
-    this._instructionsTable = table;
+    this._instructionsTable = {};
+    instructions.forEach((ins) => this._instructionsTable[ins.id] = ins);
   }
 
   private _getInstructionsPublicFields(instructions: T.Instruction[]) {
-    const instructionsPublic = instructions.map((el: T.Instruction) => {
-      const publicData = (({ handler, ...o }) => o)(el); // remove "handler" field
-      return publicData;
-    });
-
-    return instructionsPublic;
+    return instructions.map((el) => (({ handler, ...o }) => o)(el)); // removing "handler" field
   }
 
   private serveAllExternalListenersWithNewEvent(event: T.RemoteEvent) {
@@ -276,12 +270,12 @@ class Connector {
     this._fillInstructionsTable(instructions);
     this._onEventUsersCustomCallback = usersCustomCallback;
 
-    if (config?.EncryptionPlugin) {
+    if (config?.EncryptionPlugin)
       this._encryption = new config.EncryptionPlugin();
-    }
-    if (config?.projectInfo) {
+    if (config?.projectInfo)
       this._projectInfo = config.projectInfo;
-    }
+    if (config?.enableStackTracing)
+      this._enableStackTracing = true;
 
     this._connectionInfoPacket = {
       apiKey,
@@ -301,12 +295,10 @@ class Connector {
       reconnectionDelay: 3e3,
     });
 
-    if (config?.Interceptor) {
+    if (config?.Interceptor)
       this._setupNetworkMonitor(config);
-    }
-    if (config?.ReactNativePlugin) {
+    if (config?.ReactNativePlugin)
       this._setupRN(config);
-    }
 
     this._socket.on(SOCKET_EVENTS_LISTEN.CONNECT, () => {
       codebudConsoleLog('Socket connected:', this._socket?.connected);
@@ -377,11 +369,12 @@ class Connector {
     }
   }
 
-  public handleDispatchedReduxAction(action: T.InterceptedReduxAction, batchingTimeMs: number) {
+  public async handleDispatchedReduxAction(action: T.InterceptedReduxAction, batchingTimeMs: number) {
     if (this._socket?.connected) {
       const timestamp = moment().valueOf();
       const actionId = this._currentInterceptedReduxActionId++;
-      const reduxActionData = {actionId: `RA_${actionId}`, action, timestamp};
+      const _stackTraceData = this._enableStackTracing ? (await getStackTrace(new Error(''))) : undefined;
+      const reduxActionData = {actionId: `RA_${actionId}`, action, timestamp, _stackTraceData};
       jsonStringifyKeepMeta(reduxActionData).ok && this._currentReduxActionsBatch.push(reduxActionData);
 
       if (this._sendReduxActionsBatchingTimer) 
@@ -419,11 +412,12 @@ class Connector {
 
   // AsyncStorage / localStorage
   // used in asyncStoragePlugin & localStoragePlugin, (binded context)
-  private _handleInterceptedStorageAction(action: string, data?: any) {
+  private async _handleInterceptedStorageAction(action: string, data?: any) {
     if (this._socket?.connected) {
       const timestamp = moment().valueOf();
       const storageActionId = this._currentInterceptedStorageActionId++;
-      const storageActionData = {storageActionId: `SA_${storageActionId}`, action, data, timestamp};
+      const _stackTraceData = this._enableStackTracing ? (await getStackTrace(new Error(''))) : undefined;
+      const storageActionData = {storageActionId: `SA_${storageActionId}`, action, data, timestamp, _stackTraceData};
       jsonStringifyKeepMeta(storageActionData).ok && this._currentStorageActionsBatch.push(storageActionData);
 
       if (this._sendStorageActionsBatchingTimer) 
@@ -455,13 +449,58 @@ class Connector {
     this._untrackLocalStorage = controlFunctions.untrackLocalStorage;
   }
 
-  public captureEvent(title: string, data: any) {
+  public async captureEvent(title: string, data: any) {
     if (this._socket?.connected) {
       const timestamp = moment().valueOf();
       const capturedEventId = this._currentCapturedEventId++;
 
-      const encryptedData = this._encryptData({timestamp, capturedEventId: `UCE_${capturedEventId}`, title, data});
+      const _stackTraceData = this._enableStackTracing ? (await getStackTrace(new Error(''))) : undefined;
+
+      const encryptedData = this._encryptData({timestamp, capturedEventId: `UCE_${capturedEventId}`, title, data, _stackTraceData});
       encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.CAPTURE_EVENT, encryptedData.result);
+    }
+  }
+
+  public async captureCrashReport(type: string, data: any) {
+    codebudConsoleWarn(`${CONFIG.PRODUCT_NAME} has captured important exception:`, type, data);
+
+    if (this._socket?.connected) {
+      const timestamp = moment().valueOf();
+      const crashReportId = this._currentCrashReportId++;
+
+      let _stackTraceData;
+      if ((data instanceof Error) || data?.stack)
+        _stackTraceData = await getStackTrace(data.stack);
+
+      const encryptedData = this._encryptData({timestamp, crashReportId: `ACR_${crashReportId}`, type, data, _stackTraceData});
+      encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.CAPTURE_CRASH_REPORT, encryptedData.result);
+    }
+  }
+
+  public enableApplicationCrashInterception() {
+    const environmentPlatform = getEnvironmentPlatform();
+
+    switch (environmentPlatform) {
+      case "nodejs": {
+        process
+          .on('unhandledRejection', (reason) => this.captureCrashReport('unhandledRejection', reason))
+          .on('uncaughtException', (err) => this.captureCrashReport('uncaughtException', errorToJSON(err)).then(() => process.exit(1)));
+        break;
+      }
+      case "web": {
+        window.onunhandledrejection = (event) => {
+          this.captureCrashReport('window.onunhandledrejection', {reason: event.reason});
+          event.preventDefault(); // Prevent the default handling (such as outputting the error to the console)
+        }
+        window.onerror = (message, source, line, col, error) => {
+          this.captureCrashReport('window.onerror', {message, source, line, col, error: errorToJSON(error)});
+          return true; // Return true to prevent the default browser error handling
+        };
+        break;
+      }
+      default:
+        codebudConsoleWarn(`enableApplicationCrashInterception method does not do anything for this platform: ${environmentPlatform}. Consider reading ${CONFIG.PRODUCT_NAME} docs.`);
+        break;
     }
   }
 
@@ -498,11 +537,12 @@ class Connector {
     }
   }
 
-  private _proceedInterceptedTanStackQueryEvent(event: T.TanStackQueryCacheEvent, batchingTimeMs: number) {
+  private async _proceedInterceptedTanStackQueryEvent(event: T.TanStackQueryCacheEvent, batchingTimeMs: number) {
     if (this._socket?.connected) {
       const timestamp = moment().valueOf();
       const tanStackQueryEventId = this._currentInterceptedTanStackQueryEventId++;
-      const tanStackQueryEventData: T.InterceptedTanStackQueryEventPreparedData = {tanStackQueryEventId: `TQE_${tanStackQueryEventId}`, event, timestamp};
+      const _stackTraceData = this._enableStackTracing ? (await getStackTrace(new Error(''))) : undefined;
+      const tanStackQueryEventData: T.InterceptedTanStackQueryEventPreparedData = {tanStackQueryEventId: `TQE_${tanStackQueryEventId}`, event, timestamp, _stackTraceData};
       jsonStringifyKeepMeta(tanStackQueryEventData).ok && this._currentTanStackQueryEventsBatch.push(tanStackQueryEventData);
 
       if (this._sendTanStackQueryEventsBatchingTimer)
@@ -554,6 +594,7 @@ class Connector {
     this._socket = undefined;
     this._apiKey = "";
     this._projectInfo = null;
+    this._enableStackTracing = false;
     this._instructionsTable = {};
     this._onEventUsersCustomCallback = undefined;
     this._connectionInfoPacket = undefined;

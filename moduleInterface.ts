@@ -81,6 +81,10 @@ export interface AppKlaarSdk {
    */
   captureEvent: (title: string, data: any) => void;
   /**
+   * Enable intercepting of crash signals and unhandled exceptions to send crash reports to GUI timeline.
+   */
+  enableApplicationCrashInterception: () => void;
+  /**
    * Function that enables TanStack queries data monitor.
    * @param {any} queryClient Your queryClient
    * @param {number} [updateIntervalMs = 1000] Interval of re-checking TanStack queries data (in ms). Defaults to 1000.

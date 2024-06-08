@@ -16,10 +16,32 @@ export type PackageConfig = {
   ReactNativePlugin?: any;
   projectInfo?: ProjectInfo;
   remoteSettingsAutoUpdateInterval?: number;
+  enableStackTracing?: boolean;
 };
 
 export type NetworkInterceptorInstance = {
   dispose: () => void;
+};
+
+export type StackTraceCallData = {
+  sourceLine?: string;
+  beforeParse: string;
+  callee: string;
+  calleeShort?: string;
+  native: boolean;
+  file?: string;
+  fileRelative?: string;
+  fileShort?: string;
+  fileName?: string;
+  line?: number;
+};
+
+export type StackTraceData = {
+  stack?: StackTraceCallData[];
+};
+
+export type WithStackTrace<T> = T & {
+  _stackTraceData?: StackTraceData;
 };
 
 export type InterceptedRequest = {
@@ -41,18 +63,18 @@ export type InterceptedReduxAction = {
   payload?: any;
 }
 
-export type InterceptedReduxActionPreparedData = {
+export type InterceptedReduxActionPreparedData = WithStackTrace<{
   actionId: string;
   action: InterceptedReduxAction;
   timestamp: number;
-}
+}>;
 
-export type InterceptedStorageActionPreparedData = {
+export type InterceptedStorageActionPreparedData = WithStackTrace<{
   storageActionId: string;
   action: string;
   data?: any;
   timestamp: number;
-}
+}>;
 
 export type NetworkInterceptorOnRequestPayload = {
   request: InterceptedRequest;
@@ -191,8 +213,8 @@ export type TanStackQueryFnData = unknown | undefined;
 
 export type TanStackGetQueriesDataReturnType = ([TanStackQueryKey, TanStackQueryFnData])[];
 
-export type InterceptedTanStackQueryEventPreparedData = {
+export type InterceptedTanStackQueryEventPreparedData = WithStackTrace<{
   tanStackQueryEventId: string;
   event: TanStackQueryCacheEvent;
   timestamp: number;
-};
+}>;

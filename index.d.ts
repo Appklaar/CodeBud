@@ -14,12 +14,13 @@ declare module '@appklaar/codebud' {
     ReactNativePlugin?: any;
     projectInfo?: ProjectInfo;
     remoteSettingsAutoUpdateInterval?: number;
+    enableStackTracing?: boolean;
   };
   
   export type NetworkInterceptorInstance = {
     dispose: () => void;
   };
-  
+
   export type InterceptedRequest = {
     method: string;
     body: ObjectT<any> | undefined;
@@ -206,6 +207,10 @@ declare module '@appklaar/codebud' {
      */
     captureEvent: (title: string, data: any) => void;
     /**
+     * Enable intercepting of crash signals and unhandled exceptions to send crash reports to GUI timeline.
+     */
+    enableApplicationCrashInterception: () => void;
+    /**
      * Function that enables TanStack queries data monitor.
      * @param {any} queryClient Your queryClient
      * @param {number} [updateIntervalMs = 1000] Interval of re-checking TanStack queries data (in ms). Defaults to 1000.
@@ -255,6 +260,8 @@ declare module '@appklaar/codebud/react' {
     label?: string, 
     waitMs?: number
   ): void;
+
+  export class ErrorBoundary {}
 }
 
 declare module '@appklaar/codebud/Network/NetworkInterceptorClassic' {
