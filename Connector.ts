@@ -490,14 +490,14 @@ class Connector {
 
     switch (environmentPlatform) {
       case "nodejs": {
-        this._processUnhandledRejectionListener = function(reason) {
+        this._processUnhandledRejectionListener = function(this: Connector, reason: unknown) {
           this.captureCrashReport('unhandledRejection', reason);
-        };
+        }.bind(this);
         process.addListener('unhandledRejection', this._processUnhandledRejectionListener);
 
-        this._processUncaughtExceptionListener = function(err) {
+        this._processUncaughtExceptionListener = function(this: Connector, err: Error) {
           this.captureCrashReport('uncaughtException', errorToJSON(err)).then(() => process.exit(1));
-        };
+        }.bind(this);
         process.addListener('uncaughtException', this._processUncaughtExceptionListener);
         break;
       }
