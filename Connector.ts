@@ -58,6 +58,11 @@ class Connector {
   private _currentTanStackQueryEventsBatch: T.InterceptedTanStackQueryEventPreparedData[] = [];
   private _contextValueCopiesTable: T.ObjectT<any> = {};
   private _sendContextValueThrottleTimersTable: T.ObjectT<NodeJS.Timeout | null> = {};
+  private _processUnhandledRejectionListener: ((reason: unknown) => any) | undefined;
+  private _processUncaughtExceptionListener: ((err: Error) => any) | undefined;
+  private _swizzledWindowUnhandledListeners: boolean = false;
+  private _windowInitialOnunhandledrejection: any;
+  private _windowInitialOnerror: any;
 
   public lastEvent: T.RemoteEvent | null = null;
 
@@ -485,24 +490,68 @@ class Connector {
 
     switch (environmentPlatform) {
       case "nodejs": {
-        process
-          .on('unhandledRejection', (reason) => this.captureCrashReport('unhandledRejection', reason))
-          .on('uncaughtException', (err) => this.captureCrashReport('uncaughtException', errorToJSON(err)).then(() => process.exit(1)));
+        this._processUnhandledRejectionListener = function(reason) {
+          this.captureCrashReport('unhandledRejection', reason);
+        };
+        process.addListener('unhandledRejection', this._processUnhandledRejectionListener);
+
+        this._processUncaughtExceptionListener = function(err) {
+          this.captureCrashReport('uncaughtException', errorToJSON(err)).then(() => process.exit(1));
+        };
+        process.addListener('uncaughtException', this._processUncaughtExceptionListener);
         break;
       }
       case "web": {
+        this._windowInitialOnunhandledrejection = window.onunhandledrejection;
         window.onunhandledrejection = (event) => {
           this.captureCrashReport('window.onunhandledrejection', {reason: event.reason});
           event.preventDefault(); // Prevent the default handling (such as outputting the error to the console)
         }
+
+        this._windowInitialOnerror = window.onerror;
         window.onerror = (message, source, line, col, error) => {
           this.captureCrashReport('window.onerror', {message, source, line, col, error: errorToJSON(error)});
           return true; // Return true to prevent the default browser error handling
         };
+        
+        this._swizzledWindowUnhandledListeners = true;
+
         break;
       }
       default:
         codebudConsoleWarn(`enableApplicationCrashInterception method does not do anything for this platform: ${environmentPlatform}. Consider reading ${CONFIG.PRODUCT_NAME} docs.`);
+        break;
+    }
+  }
+
+  private _disableApplicationCrashInterception() {
+    const environmentPlatform = getEnvironmentPlatform();
+
+    switch (environmentPlatform) {
+      case "nodejs": {
+        if (this._processUnhandledRejectionListener) {
+          process.removeListener('unhandledRejection', this._processUnhandledRejectionListener);
+          this._processUnhandledRejectionListener = undefined;
+        }
+        if (this._processUncaughtExceptionListener) {
+          process.removeListener('uncaughtException', this._processUncaughtExceptionListener);
+          this._processUncaughtExceptionListener = undefined;
+        }
+        break;
+      }
+      case "web": {
+        if (this._swizzledWindowUnhandledListeners) {
+          window.onunhandledrejection = this._windowInitialOnunhandledrejection;
+          this._windowInitialOnunhandledrejection = undefined;
+
+          window.onerror = this._windowInitialOnerror;
+          this._windowInitialOnerror = undefined;
+
+          this._swizzledWindowUnhandledListeners = false;
+        }
+        break;
+      }
+      default:
         break;
     }
   }
@@ -593,6 +642,7 @@ class Connector {
 
   public disconnect() {
     this._connectorInitiated = false;
+    this._disableApplicationCrashInterception();
     this._socket?.disconnect();
     this._socket = undefined;
     this._apiKey = "";
