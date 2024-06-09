@@ -300,6 +300,8 @@ declare module '@appklaar/codebud/react' {
     render(): any;
     readonly props: Readonly<P>;
     state: Readonly<S>;
+
+    refs: {[key: string]: any};
   }
 
   export type ErrorBoundaryProps = {
