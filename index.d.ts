@@ -286,7 +286,33 @@ declare module '@appklaar/codebud/react' {
     waitMs?: number
   ): void;
 
-  export class ErrorBoundary {}
+  class Component<P, S> {
+    static contextType?: any | undefined;
+    context: unknown;
+  
+    constructor(props: Readonly<P> | P);
+  
+    setState<K extends keyof S>(
+      state: ((prevState: Readonly<S>, props: Readonly<P>) => (Pick<S, K> | S | null)) | (Pick<S, K> | S | null),
+      callback?: () => void
+    ): void;
+    forceUpdate(callback?: () => void): void;
+    render(): any;
+    readonly props: Readonly<P>;
+    state: Readonly<S>;
+  }
+
+  export type ErrorBoundaryProps = {
+    fallback?: any;
+    children: any;
+  };
+  
+  export type ErrorBoundaryState = {
+    componentStack: null | string;
+    error: null | Error;
+  };
+
+  export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {}
 }
 
 declare module '@appklaar/codebud/Network/NetworkInterceptorClassic' {

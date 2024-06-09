@@ -44,6 +44,8 @@ export type PackageConfig = {
   stackTraceOptions?: GetStackTraceFunctionOptions;
 };
 
+export type AppCrashReportType = "unhandledRejection" | "uncaughtException" | "window.onunhandledrejection" | "window.onerror" | "React ErrorBoundary";
+
 export type NetworkInterceptorInstance = {
   dispose: () => void;
 };

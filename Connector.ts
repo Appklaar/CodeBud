@@ -469,7 +469,7 @@ class Connector {
     }
   }
 
-  public async captureCrashReport(type: string, data: any) {
+  public async captureCrashReport(type: T.AppCrashReportType, data: any) {
     codebudConsoleWarn(`${CONFIG.PRODUCT_NAME} has captured important exception:`, type, data);
 
     if (this._socket?.connected) {
@@ -477,8 +477,12 @@ class Connector {
       const crashReportId = this._currentCrashReportId++;
 
       let _stackTraceData;
-      if (((data instanceof Error) || data?.stack || (data?.error instanceof Error) || data?.error?.stack) && this._getStackTraceFn)
-        _stackTraceData = await this._getStackTraceFn(data.stack ?? data.error.stack, this._stackTraceOptions);
+      if (this._getStackTraceFn) {
+        if ((data instanceof Error) || data?.stack || (data?.error instanceof Error) || data?.error?.stack)
+          _stackTraceData = await this._getStackTraceFn(data.stack ?? data.error.stack, this._stackTraceOptions);
+        else if (type === "React ErrorBoundary" && data.componentStack)
+          _stackTraceData = await this._getStackTraceFn(data.componentStack, this._stackTraceOptions);
+      }
       const encryptedData = this._encryptData({timestamp, crashReportId: `ACR_${crashReportId}`, type, data, _stackTraceData});
       encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.CAPTURE_CRASH_REPORT, encryptedData.result);
     }
