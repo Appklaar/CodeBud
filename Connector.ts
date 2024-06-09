@@ -477,9 +477,8 @@ class Connector {
       const crashReportId = this._currentCrashReportId++;
 
       let _stackTraceData;
-      if (((data instanceof Error) || data?.stack) && this._getStackTraceFn)
-        _stackTraceData = await this._getStackTraceFn(data.stack, this._stackTraceOptions);
-
+      if (((data instanceof Error) || data?.stack || (data?.error instanceof Error) || data?.error?.stack) && this._getStackTraceFn)
+        _stackTraceData = await this._getStackTraceFn(data.stack ?? data.error.stack, this._stackTraceOptions);
       const encryptedData = this._encryptData({timestamp, crashReportId: `ACR_${crashReportId}`, type, data, _stackTraceData});
       encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.CAPTURE_CRASH_REPORT, encryptedData.result);
     }
