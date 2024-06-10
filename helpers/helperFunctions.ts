@@ -108,3 +108,9 @@ export const errorToJSON = (error: any) => {
 
   return {error: error};
 }
+
+export const countOccurrences = (searchFor: string, searchIn: string) => {
+  const regex = new RegExp(searchFor, 'g');
+  const matches = searchIn.match(regex);
+  return matches ? matches.length : 0;
+}

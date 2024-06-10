@@ -1,4 +1,5 @@
 import { StackTraceCallData } from "../types";
+import { countOccurrences } from "./../helpers/helperFunctions";
 
 export const nixSlashes = (x: string) => x.replace (/\\/g, '/');
 
@@ -15,8 +16,10 @@ type SimpleParsedStack = {
 export const parseRawStack = (str: string = ""): SimpleParsedStack => {
   const lines = str.split('\n');
 
+  const atOccurs = countOccurrences("at ", str);
+  const inOccurs = countOccurrences("in ", str);
   // Preposition that refers to where in code is called. Usually is "at", but, for example, in RN can be "in"
-  const at = "(in|at)";
+  const at = atOccurs > inOccurs ? "at" : "in";
 
   const regexp1 = new RegExp(`${at} (.+) \\(eval ${at} .+ \\((.+)\\), .+\\)`);
   const regexp2 = new RegExp(`${at} (.+) \\((.+)\\)`);
