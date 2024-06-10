@@ -1,4 +1,3 @@
-import { getEnvironmentPlatform } from "../helpers/platform";
 import { StackTraceCallData } from "../types";
 
 export const nixSlashes = (x: string) => x.replace (/\\/g, '/');
