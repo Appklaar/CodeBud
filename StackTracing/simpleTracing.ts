@@ -16,8 +16,8 @@ type SimpleParsedStack = {
 export const parseRawStack = (str: string = ""): SimpleParsedStack => {
   const lines = str.split('\n');
 
-  // Preposition that refers to where in code is called. Defaults to "at", but, for example, in RN should be "in"
-  const at = getEnvironmentPlatform() === "react-native" ? "in" : "at";
+  // Preposition that refers to where in code is called. Usually is "at", but, for example, in RN can be "in"
+  const at = "(in|at)";
 
   const regexp1 = new RegExp(`${at} (.+) \\(eval ${at} .+ \\((.+)\\), .+\\)`);
   const regexp2 = new RegExp(`${at} (.+) \\((.+)\\)`);
