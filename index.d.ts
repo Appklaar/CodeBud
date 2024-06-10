@@ -7,6 +7,30 @@ declare module '@appklaar/codebud' {
 
   export type PackageMode = "dev" | "prod";
 
+  export type StackTraceCallData = {
+    sourceLine?: string;
+    beforeParse: string;
+    callee: string;
+    calleeShort?: string;
+    native: boolean;
+    file?: string;
+    fileRelative?: string;
+    fileShort?: string;
+    fileName?: string;
+    line?: number;
+  };
+  
+  export type StackTraceData = {
+    stack?: StackTraceCallData[];
+  };
+  
+  export type GetStackTraceFunctionOptions = {
+    calleeExclude?: string[];
+    fileNameExclude?: string[];
+  };
+  
+  export type GetStackTraceFunction = (errorOrStack: Error | string | undefined, options?: GetStackTraceFunctionOptions) => Promise<StackTraceData>;
+
   export type PackageConfig = {
     mode?: PackageMode;
     Interceptor?: any;
@@ -14,12 +38,14 @@ declare module '@appklaar/codebud' {
     ReactNativePlugin?: any;
     projectInfo?: ProjectInfo;
     remoteSettingsAutoUpdateInterval?: number;
+    getStackTraceFn?: GetStackTraceFunction;
+    stackTraceOptions?: GetStackTraceFunctionOptions;
   };
   
   export type NetworkInterceptorInstance = {
     dispose: () => void;
   };
-  
+
   export type InterceptedRequest = {
     method: string;
     body: ObjectT<any> | undefined;
@@ -206,6 +232,10 @@ declare module '@appklaar/codebud' {
      */
     captureEvent: (title: string, data: any) => void;
     /**
+     * Enable intercepting of crash signals and unhandled exceptions to send crash reports to GUI timeline.
+     */
+    enableApplicationCrashInterception: () => void;
+    /**
      * Function that enables TanStack queries data monitor.
      * @param {any} queryClient Your queryClient
      * @param {number} [updateIntervalMs = 1000] Interval of re-checking TanStack queries data (in ms). Defaults to 1000.
@@ -255,6 +285,36 @@ declare module '@appklaar/codebud/react' {
     label?: string, 
     waitMs?: number
   ): void;
+
+  class Component<P, S> {
+    static contextType?: any | undefined;
+    context: unknown;
+  
+    constructor(props: Readonly<P> | P);
+  
+    setState<K extends keyof S>(
+      state: ((prevState: Readonly<S>, props: Readonly<P>) => (Pick<S, K> | S | null)) | (Pick<S, K> | S | null),
+      callback?: () => void
+    ): void;
+    forceUpdate(callback?: () => void): void;
+    render(): any;
+    readonly props: Readonly<P>;
+    state: Readonly<S>;
+
+    refs: {[key: string]: any};
+  }
+
+  export type ErrorBoundaryProps = {
+    fallback?: any;
+    children: any;
+  };
+  
+  export type ErrorBoundaryState = {
+    componentStack: null | string;
+    error: null | Error;
+  };
+
+  export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {}
 }
 
 declare module '@appklaar/codebud/Network/NetworkInterceptorClassic' {
@@ -298,4 +358,60 @@ declare module '@appklaar/codebud/rn' {
 
 declare module '@appklaar/codebud/encryption' {
   export class EncryptionPlugin {}
+}
+
+declare module '@appklaar/codebud/StackTracing/getStackTraceStackTracey' {
+  export type StackTraceCallData = {
+    sourceLine?: string;
+    beforeParse: string;
+    callee: string;
+    calleeShort?: string;
+    native: boolean;
+    file?: string;
+    fileRelative?: string;
+    fileShort?: string;
+    fileName?: string;
+    line?: number;
+  };
+  
+  export type StackTraceData = {
+    stack?: StackTraceCallData[];
+  };
+  
+  export type GetStackTraceFunctionOptions = {
+    calleeExclude?: string[];
+    fileNameExclude?: string[];
+  };
+  
+  export type GetStackTraceFunction = (errorOrStack: Error | string | undefined, options?: GetStackTraceFunctionOptions) => Promise<StackTraceData>;
+
+  export const getStackTraceStackTracey: GetStackTraceFunction;
+}
+
+declare module '@appklaar/codebud/StackTracing/getStackTraceSimple' {
+  export type StackTraceCallData = {
+    sourceLine?: string;
+    beforeParse: string;
+    callee: string;
+    calleeShort?: string;
+    native: boolean;
+    file?: string;
+    fileRelative?: string;
+    fileShort?: string;
+    fileName?: string;
+    line?: number;
+  };
+  
+  export type StackTraceData = {
+    stack?: StackTraceCallData[];
+  };
+  
+  export type GetStackTraceFunctionOptions = {
+    calleeExclude?: string[];
+    fileNameExclude?: string[];
+  };
+  
+  export type GetStackTraceFunction = (errorOrStack: Error | string | undefined, options?: GetStackTraceFunctionOptions) => Promise<StackTraceData>;
+
+  export const getStackTraceSimple: GetStackTraceFunction;
 }

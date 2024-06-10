@@ -95,3 +95,16 @@ export const jsonStringifyKeepMeta = (data: ObjectT<any>): {result: string, ok: 
 
   return {result: JSON.stringify({message}), ok: false};
 }
+
+export const errorToJSON = (error: any) => {
+  if (error instanceof Error) {
+    var alt: ObjectT<any> = {};
+
+    // @ts-ignore
+    Object.getOwnPropertyNames(error).forEach((key) => alt[key] = error[key]);
+
+    return alt;
+  }
+
+  return {error: error};
+}

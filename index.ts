@@ -93,7 +93,7 @@ export const CodeBud: ModuleInterface = {
   createReduxActionMonitorMiddleware(batchingTimeMs = 200) {
     return () => (next: any) => (action: any) => {
       if (connector.isInit)
-        connector.handleDispatchedReduxAction(action, batchingTimeMs);
+        connector.codebudHandleDispatchedReduxAction(action, batchingTimeMs);
 
       return next(action);
     }
@@ -143,6 +143,15 @@ export const CodeBud: ModuleInterface = {
         throw new Error(`Unable to capture event. Double check that you initialized ${CONFIG.PRODUCT_NAME}`);
 
       return connector.captureEvent(title, data);
+    } catch (e) {
+      if (this._mode === "dev")
+        codebudConsoleWarn(e);
+    }
+  },
+
+  enableApplicationCrashInterception() {
+    try {
+      connector.enableApplicationCrashInterception();
     } catch (e) {
       if (this._mode === "dev")
         codebudConsoleWarn(e);
