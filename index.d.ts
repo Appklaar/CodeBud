@@ -1,35 +1,68 @@
-declare module '@appklaar/codebud' {
-  export type ObjectT<T> = {[key: string]: T};
+declare type ObjectT<T> = {[key: string]: T};
 
+declare type StackTraceCallData = {
+  sourceLine?: string;
+  beforeParse: string;
+  callee: string;
+  calleeShort?: string;
+  native: boolean;
+  file?: string;
+  fileRelative?: string;
+  fileShort?: string;
+  fileName?: string;
+  line?: number;
+};
+
+declare type StackTraceData = {
+  stack?: StackTraceCallData[];
+};
+
+declare type GetStackTraceFunctionOptions = {
+  calleeExclude?: string[];
+  fileNameExclude?: string[];
+};
+
+declare type GetStackTraceFunction = (errorOrStack: Error | string | undefined, options?: GetStackTraceFunctionOptions) => Promise<StackTraceData>;
+
+declare type SpecialInstructionId = "condition" | "delay" | "forwardData";
+
+declare type RemoteEvent = {
+  id: string;
+  eventType: "default" | "special";
+  instructionId: string | SpecialInstructionId;
+  args?: any[];
+};
+
+declare type RemoteSettingsEnv = "dev" | "stg" | "prod";
+
+declare type _RemoteSettings = {[env in RemoteSettingsEnv]: ObjectT<string>};
+
+declare class Component<P, S> {
+  static contextType?: any | undefined;
+  context: unknown;
+
+  constructor(props: Readonly<P> | P);
+
+  setState<K extends keyof S>(
+    state: ((prevState: Readonly<S>, props: Readonly<P>) => (Pick<S, K> | S | null)) | (Pick<S, K> | S | null),
+    callback?: () => void
+  ): void;
+  forceUpdate(callback?: () => void): void;
+  render(): any;
+  readonly props: Readonly<P>;
+  state: Readonly<S>;
+
+  refs: {[key: string]: any};
+}
+
+declare type ReactFunctionalComponent<T> = (props: T) => any | null;
+
+declare module '@appklaar/codebud' {
   export type ProjectInfo = {
     projectId: string;
   };
 
   export type PackageMode = "dev" | "prod";
-
-  export type StackTraceCallData = {
-    sourceLine?: string;
-    beforeParse: string;
-    callee: string;
-    calleeShort?: string;
-    native: boolean;
-    file?: string;
-    fileRelative?: string;
-    fileShort?: string;
-    fileName?: string;
-    line?: number;
-  };
-  
-  export type StackTraceData = {
-    stack?: StackTraceCallData[];
-  };
-  
-  export type GetStackTraceFunctionOptions = {
-    calleeExclude?: string[];
-    fileNameExclude?: string[];
-  };
-  
-  export type GetStackTraceFunction = (errorOrStack: Error | string | undefined, options?: GetStackTraceFunctionOptions) => Promise<StackTraceData>;
 
   export type PackageConfig = {
     mode?: PackageMode;
@@ -110,16 +143,7 @@ declare module '@appklaar/codebud' {
   
   export type InstructionsTable = {[key: string]: Instruction};
   
-  export type SpecialInstructionId = "condition" | "delay" | "forwardData";
-  
   export type SpecialInstructionsTable = {[id in SpecialInstructionId]: Instruction};
-  
-  export type RemoteEvent = {
-    id: string;
-    eventType: "default" | "special";
-    instructionId: string | SpecialInstructionId;
-    args?: any[];
-  };
   
   export type OnEventUsersCustomCallback = (event: RemoteEvent) => void;
   
@@ -142,10 +166,8 @@ declare module '@appklaar/codebud' {
   export type EventListenersTable = ListenersTable<RemoteEvent>;
   
   export type SelectFn = (state: any) => any;
-  
-  export type RemoteSettingsEnv = "dev" | "stg" | "prod";
 
-  export type RemoteSettings = {[env in RemoteSettingsEnv]: ObjectT<string>};
+  export type RemoteSettings = _RemoteSettings;
   
   export type RemoteSettingsListenersTable = ListenersTable<RemoteSettings>;
   
@@ -260,19 +282,6 @@ declare module '@appklaar/codebud' {
 }
 
 declare module '@appklaar/codebud/react' {
-  export type ObjectT<T> = {[key: string]: T};
-
-  export type RemoteEvent = {
-    id: string;
-    eventType: "default" | "special";
-    instructionId: string;
-    args?: any[];
-  };
-
-  export type RemoteSettingsEnv = "dev" | "stg" | "prod";
-
-  export type RemoteSettings = {[env in RemoteSettingsEnv]: ObjectT<string>};
-
   export function useEvent(
     handler: (event: RemoteEvent) => any, 
     instructionIds: ReadonlyArray<string>
@@ -285,24 +294,6 @@ declare module '@appklaar/codebud/react' {
     label?: string, 
     waitMs?: number
   ): void;
-
-  class Component<P, S> {
-    static contextType?: any | undefined;
-    context: unknown;
-  
-    constructor(props: Readonly<P> | P);
-  
-    setState<K extends keyof S>(
-      state: ((prevState: Readonly<S>, props: Readonly<P>) => (Pick<S, K> | S | null)) | (Pick<S, K> | S | null),
-      callback?: () => void
-    ): void;
-    forceUpdate(callback?: () => void): void;
-    render(): any;
-    readonly props: Readonly<P>;
-    state: Readonly<S>;
-
-    refs: {[key: string]: any};
-  }
 
   export type ErrorBoundaryProps = {
     fallback?: any;
@@ -334,8 +325,6 @@ declare module '@appklaar/codebud/Network/NetworkInterceptorXHR' {
 }
 
 declare module '@appklaar/codebud/rn' {
-  type ReactFunctionalComponent<T> = (props: T) => any | null;
-
   export type InitModalProps = {
     animationType?: "fade" | "none" | "slide";
     onInit: (apiKey: string) => void;
@@ -360,58 +349,10 @@ declare module '@appklaar/codebud/encryption' {
   export class EncryptionPlugin {}
 }
 
-declare module '@appklaar/codebud/StackTracing/getStackTraceStackTracey' {
-  export type StackTraceCallData = {
-    sourceLine?: string;
-    beforeParse: string;
-    callee: string;
-    calleeShort?: string;
-    native: boolean;
-    file?: string;
-    fileRelative?: string;
-    fileShort?: string;
-    fileName?: string;
-    line?: number;
-  };
-  
-  export type StackTraceData = {
-    stack?: StackTraceCallData[];
-  };
-  
-  export type GetStackTraceFunctionOptions = {
-    calleeExclude?: string[];
-    fileNameExclude?: string[];
-  };
-  
-  export type GetStackTraceFunction = (errorOrStack: Error | string | undefined, options?: GetStackTraceFunctionOptions) => Promise<StackTraceData>;
-
+declare module '@appklaar/codebud/StackTracing/getStackTraceStackTracey' {    
   export const getStackTraceStackTracey: GetStackTraceFunction;
 }
 
-declare module '@appklaar/codebud/StackTracing/getStackTraceSimple' {
-  export type StackTraceCallData = {
-    sourceLine?: string;
-    beforeParse: string;
-    callee: string;
-    calleeShort?: string;
-    native: boolean;
-    file?: string;
-    fileRelative?: string;
-    fileShort?: string;
-    fileName?: string;
-    line?: number;
-  };
-  
-  export type StackTraceData = {
-    stack?: StackTraceCallData[];
-  };
-  
-  export type GetStackTraceFunctionOptions = {
-    calleeExclude?: string[];
-    fileNameExclude?: string[];
-  };
-  
-  export type GetStackTraceFunction = (errorOrStack: Error | string | undefined, options?: GetStackTraceFunctionOptions) => Promise<StackTraceData>;
-
+declare module '@appklaar/codebud/StackTracing/getStackTraceSimple' {      
   export const getStackTraceSimple: GetStackTraceFunction;
 }
