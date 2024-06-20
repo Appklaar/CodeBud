@@ -3,6 +3,7 @@ import { NetworkInterceptorApi } from './AbstractInterceptor';
 import { NetworkInterceptorCallbacksTable } from '../types/types';
 import { shouldProceedIntercepted } from './helpers';
 import { codebudConsoleLog } from '../helpers/helperFunctions';
+import { SPECIAL_HTTP_STATUS_CODES } from '../constants/httpStatusCodes';
 
 type Callback = (data: any) => void;
 
@@ -29,8 +30,8 @@ class NetworkInterceptorXHR extends NetworkInterceptorApi {
 
   protected async formatResponse(response: any) {
     const formattedResponse = {
-      status: response.status,
-      statusText: response.status.toString(),
+      status: response.status ?? SPECIAL_HTTP_STATUS_CODES.STATUS_CODE_UNDEFINED.STATUS,
+      statusText: response.status?.toString() ?? SPECIAL_HTTP_STATUS_CODES.STATUS_CODE_UNDEFINED.STATUS_TEXT,
       data: response.response,
       responseHeaders: response.responseHeaders
     };
