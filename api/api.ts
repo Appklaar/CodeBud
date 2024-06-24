@@ -1,9 +1,6 @@
 import { create } from "apisauce";
 import { CONFIG } from './../config';
-import { 
-  GetRemoteSettingsRequest,
-  GetRemoteSettingsResponse
-} from "../types/types";
+import * as T from "../types/api";
 
 const SOCKET_EVENTS_LISTEN = {
   CONNECT: "connect",
@@ -58,7 +55,8 @@ const updateAuthorizationHeaderWithApiKey = (apiKey: string) => {
 
 const api = {
   sauce,
-  getRemoteSettingsGet: (params: GetRemoteSettingsRequest) => sauceAuthorizedApiKey.get<GetRemoteSettingsResponse>(`/project/${params.projectId}/remotesettings`)
+  getRemoteSettingsGet: (params: T.GetRemoteSettingsRequest) => sauceAuthorizedApiKey.get<T.GetRemoteSettingsResponse>(`/project/${params.projectId}/remotesettings`),
+  personalSettingGet: (params: T.PersonalSettingRequest) => sauce.get<T.PersonalSettingResponse>(`/client/one/${params.apiKey}`),
 };
 
 export { 

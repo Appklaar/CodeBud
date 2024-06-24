@@ -1,13 +1,16 @@
 import { validateHexId24Symbols } from "../constants/regex";
 import { codebudConsoleWarn } from "../helpers/helperFunctions";
-import { RefreshRemoteSettingsCallback, RemoteSettings, RemoteSettingsListenersTable } from "../types/types";
+import { PersonalProjectsSetting, RefreshPersonalProjectsSettingCallback, RefreshRemoteSettingsCallback, RemoteSettings, RemoteSettingsListenersTable } from "../types/types";
 import { api } from './../api/api';
+import { classicApiResponseValidator } from './../helpers/apiResponseValidators';
 
 class RemoteSettingsService {
   private _projectId: string = "";
+  private _apiKey: string = "";
   private _isInit: boolean = false;
   private _remoteSettings: RemoteSettings | null = null;
   private _remoteSettingsListenersTable: RemoteSettingsListenersTable = {};
+  private _personalProjectsSetting: PersonalProjectsSetting | null = null;
   private _autoUpdateTimer: NodeJS.Timer | null = null;
 
   public addRemoteSettingsListener(key: string, handler: (r: RemoteSettings) => any) {
@@ -29,18 +32,49 @@ class RemoteSettingsService {
       this._remoteSettingsListenersTable[key](r);
   }
 
+  private _onGotNewPersonalProjectsSetting(s: PersonalProjectsSetting) {
+    if (!this._isInit)
+      return;
+
+    this._personalProjectsSetting = s;
+  }
+
+  public async refreshPersonalProjectsSetting(callbackFn?: RefreshPersonalProjectsSettingCallback) {
+    try {
+      if (!this._isInit) {
+        throw new Error("Remote settings service is not initiated. Please make sure that you've passed correct projectId and check console for related errors.");
+      }
+
+      const personalProjectsSetting = await api.personalSettingGet({apiKey: this._apiKey})
+      .then((response) => {
+        if (classicApiResponseValidator(response)) {
+          return response.data!.client.projectsSetting;
+        } else {
+          throw new Error("Server returned an error (personalSettingGet)");
+        }
+      });
+
+      this._onGotNewPersonalProjectsSetting(personalProjectsSetting);
+      callbackFn?.(personalProjectsSetting);
+    } catch (e) {
+      codebudConsoleWarn("Error while trying to fetch personal projects settings", e);
+    }
+  }
+
   public async refreshRemoteSettings(callbackFn?: RefreshRemoteSettingsCallback) {
     try {
       if (!this._isInit) {
         throw new Error("Remote settings service is not initiated. Please make sure that you've passed correct projectId and check console for related errors.");
       }
 
+      this.refreshPersonalProjectsSetting();
+
       const remoteSettings = await api.getRemoteSettingsGet({projectId: this._projectId})
       .then((response) => {
-        if (response.ok && response.data) {
-          return response.data?.remoteSettings
+        if (classicApiResponseValidator(response)) {
+          return response.data!.remoteSettings;
         } else {
-          throw new Error("Response returned an error");
+          throw new Error("Server returned an error (getRemoteSettingsGet)");
         }
       });
 
@@ -51,7 +85,7 @@ class RemoteSettingsService {
     }
   }
 
-  public init(projectId: string, autoUpdateInterval?: number) {
+  public init(projectId: string, apiKey: string, autoUpdateInterval?: number) {
     try {
       if (this._isInit)
         throw new Error("Already initiated!");
@@ -66,6 +100,7 @@ class RemoteSettingsService {
       }
 
       this._projectId = projectId;
+      this._apiKey = apiKey; // We assume that apiKey has already been validated
 
       this.refreshRemoteSettings();
       if (autoUpdateInterval !== undefined)
@@ -79,13 +114,26 @@ class RemoteSettingsService {
     return this._remoteSettings;
   }
 
+  public isRemoteSettingsPreferable() {
+    if (!this._isInit)
+      return false;
+
+    return !!this._personalProjectsSetting?.[this._projectId]?.remoteSettingsEnabled;
+  }
+
+  public getPreferableValue(valueA: any, valueB: any) {
+    return this.isRemoteSettingsPreferable() ? valueA : valueB;
+  }
+
   public clear() {
     if (this._autoUpdateTimer !== null)
       clearInterval(this._autoUpdateTimer);
 
     this._projectId = "";
+    this._apiKey = "";
     this._remoteSettings = null;
     this._remoteSettingsListenersTable = {};
+    this._personalProjectsSetting = null;
     this._isInit = false;
   }
 };

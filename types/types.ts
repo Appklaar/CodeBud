@@ -102,11 +102,6 @@ export type NetworkInterceptorCallbacksTable = {
   onResponse: (data: NetworkInterceptorOnResponsePayload) => void;
 };
 
-export type ErrorResponse = {
-  message?: string;
-  invalidParameters?: string[];
-};
-
 type InstructionPrototype = "login" | "logout";
 
 type BaseParamType = "number" | "string" | "object" | "array" | "boolean";
@@ -207,15 +202,20 @@ export type RemoteSettings = {[env in RemoteSettingsEnv]: ObjectT<string>};
 
 export type RemoteSettingsListenersTable = ListenersTable<RemoteSettings>;
 
-export type GetRemoteSettingsResponse = {
-  remoteSettings: RemoteSettings 
-} & ErrorResponse;
+export type RefreshRemoteSettingsCallback = (r: RemoteSettings) => void;
 
-export type GetRemoteSettingsRequest = {
-  projectId: string;
+export type ProjectSetting = {
+  remoteSettingsEnabled: boolean;
 };
 
-export type RefreshRemoteSettingsCallback = (r: RemoteSettings) => void;
+// Key - projectId
+export type PersonalProjectsSetting = {[key: string]: ProjectSetting};
+
+export type UserProfilePublicData = {
+  projectsSetting: PersonalProjectsSetting;
+};
+
+export type RefreshPersonalProjectsSettingCallback = (s: PersonalProjectsSetting) => void;
 
 export type TanStackQueryKey = readonly unknown[];
 

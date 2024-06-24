@@ -1,5 +1,5 @@
 import { connector } from './Connector';
-import { OnEventUsersCustomCallback, RefreshRemoteSettingsCallback, RemoteSettingsEnv } from './types';
+import { OnEventUsersCustomCallback, RefreshPersonalProjectsSettingCallback, RefreshRemoteSettingsCallback, RemoteSettingsEnv } from './types';
 import { MODULE_STATES } from './States';
 import { validateApiKey } from './constants/regex';
 import { AppKlaarSdk as ModuleInterface } from './moduleInterface';
@@ -39,7 +39,7 @@ export const CodeBud: ModuleInterface = {
 
     updateAuthorizationHeaderWithApiKey(apiKey);
     if (config?.projectInfo) {
-      remoteSettingsService.init(config.projectInfo.projectId, config.remoteSettingsAutoUpdateInterval);
+      remoteSettingsService.init(config.projectInfo.projectId, apiKey, config.remoteSettingsAutoUpdateInterval);
     }
 
     if (config?.mode === "prod") {
@@ -72,8 +72,23 @@ export const CodeBud: ModuleInterface = {
     return remoteSettingsService.remoteSettings?.[env] ?? null;
   },
 
+  getIsRemoteSettingsPreferableForSelectedProject() {
+    if (this._mode === "prod")
+      return false;
+
+    return remoteSettingsService.isRemoteSettingsPreferable();
+  },
+
+  getPersonalPreferableValueForSelectedProject(valueA: any, valueB: any) {
+    return this.getIsRemoteSettingsPreferableForSelectedProject() ? valueA : valueB;
+  },
+
   async refreshRemoteSettings(callbackFn?: RefreshRemoteSettingsCallback) {
     remoteSettingsService.refreshRemoteSettings(callbackFn);
+  },
+
+  async refreshPersonalProjectsSettings(callbackFn?: RefreshPersonalProjectsSettingCallback) {
+    remoteSettingsService.refreshPersonalProjectsSetting(callbackFn);
   },
 
   createReduxStoreChangeHandler(store, selectFn, batchingTimeMs = 500) {

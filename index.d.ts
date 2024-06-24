@@ -109,11 +109,6 @@ declare module '@appklaar/codebud' {
     onResponse: (data: NetworkInterceptorOnResponsePayload) => void;
   };
   
-  export type ErrorResponse = {
-    message?: string;
-    invalidParameters?: string[];
-  };
-  
   type InstructionPrototype = "login" | "logout";
   
   type BaseParamType = "number" | "string" | "object" | "array" | "boolean";
@@ -171,11 +166,16 @@ declare module '@appklaar/codebud' {
   
   export type RemoteSettingsListenersTable = ListenersTable<RemoteSettings>;
   
-  export type GetRemoteSettingsResponse = {
-    remoteSettings: RemoteSettings 
-  } & ErrorResponse;
-  
   export type RefreshRemoteSettingsCallback = (r: RemoteSettings) => void;
+
+  export type ProjectSetting = {
+    remoteSettingsEnabled: boolean;
+  };
+  
+  // Key - projectId
+  export type PersonalProjectsSetting = {[key: string]: ProjectSetting};
+
+  export type RefreshPersonalProjectsSettingCallback = (s: PersonalProjectsSetting) => void;
 
   export interface AppKlaarSdk {
     /**
@@ -206,12 +206,28 @@ declare module '@appklaar/codebud' {
      * @param {string} env Remote settings environment.
      * @returns {ObjectT<string> | null} Last fetched remote settings object (selected environment).
      */
-    getRemoteSettingsByEnv: (env: RemoteSettingsEnv) => ObjectT<string> | null,
+    getRemoteSettingsByEnv: (env: RemoteSettingsEnv) => ObjectT<string> | null;
+    /**
+     * @returns {boolean} Flag that determines that CodeBud remote settings are currently preferable for your project. Note: if package mode is "prod", false will be returned.
+     */
+    getIsRemoteSettingsPreferableForSelectedProject: () => boolean;
+    /**
+     * Function that takes 2 args and returns one of them depending on package mode and your personal "preferable" toogle for chosen projectId on Control tab in GUI
+     * @param {any} valueA Option "A" that will be returned if CodeBud remote settings are currently preferable for your project
+     * @param {any} valueB Option "B" that will be returned if CodeBud remote settings are currently NOT preferable for your project
+     * @returns {boolean} valueA if CodeBud remote settings are currently preferable for your project, and valueB otherwise.
+     */
+    getPersonalPreferableValueForSelectedProject: (valueA: any, valueB: any) => any;
     /**
      * Function for refreshing remote settings.
      * @param {RefreshRemoteSettingsCallback} callbackFn Function that will be called if request succeeded.
      */
     refreshRemoteSettings: (callbackFn?: RefreshRemoteSettingsCallback) => void;
+    /**
+     * Function for refreshing personal projects settings.
+     * @param {RefreshPersonalProjectsSettingCallback} callbackFn Function that will be called if request succeeded.
+     */
+    refreshPersonalProjectsSettings: (callbackFn?: RefreshPersonalProjectsSettingCallback) => void;
     /**
      * Function that creates Redux Store Change Handler, that you can use to subscribe to Store Changes.
      * @param {any} store Your store.
