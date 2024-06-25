@@ -23,6 +23,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     this.state = INITIAL_STATE;
   }
 
+  static getDerivedStateFromError(error: Error) {
+    return { error: error };
+  }
+
   componentDidCatch(error: Error, { componentStack }: React.ErrorInfo) {
     connector.captureCrashReport("React ErrorBoundary", {message: error.message, componentStack});
   }
