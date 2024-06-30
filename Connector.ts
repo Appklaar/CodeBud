@@ -670,7 +670,7 @@ class Connector {
 
   public createMobxEventHandler(batchingTimeMs: number) {
     return async (event: T.MobxSpyEvent) => {
-      if (event.type !== "action")
+      if (event.type !== "action" || (event.name ?? "").includes("Reaction"))
         return;
 
       if (this._socket?.connected) {
