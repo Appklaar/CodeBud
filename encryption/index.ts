@@ -11,13 +11,13 @@ export class EncryptionPlugin {
     return randomBytes(box.nonceLength);
   };
 
-  public encryptData(json: any): {result: string, ok: boolean} {
+  public encryptData(json: any, removeCircularReferences?: boolean): {result: string, ok: boolean} {
     try {
       if (!this._sharedKey)
         throw new Error("Shared key not generated");
 
       const nonce = this.newNonce();
-      const jsonStringified = jsonStringifyKeepMeta(json);
+      const jsonStringified = jsonStringifyKeepMeta(json, removeCircularReferences);
 
       const messageUint8 = decodeUTF8(jsonStringified.result);
 

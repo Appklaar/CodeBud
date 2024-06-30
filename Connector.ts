@@ -4,23 +4,19 @@ import { EventHandleError, ScenarioHandleError } from './Errors';
 import { SOCKET_EVENTS_LISTEN, SOCKET_EVENTS_EMIT } from './api/api';
 import { SPECIAL_INSTRUCTIONS_TABLE, SPECIAL_INSTRUCTIONS } from './constants/events';
 import { io, Socket } from "socket.io-client";
-import { codebudConsoleLog, codebudConsoleWarn, jsonStringifyKeepMeta, stringifyIfNotString, errorToJSON } from './helpers/helperFunctions';
+import { codebudConsoleLog, codebudConsoleWarn, jsonStringifyKeepMeta, stringifyIfNotString, errorToJSON, jsonStringifyPossiblyCircular, emptyMobxStoreMonitor, removeCircularReferencesFromObject } from './helpers/helperFunctions';
 import { getProcessEnv } from './helpers/environment';
 import { getBrowserInfo } from './helpers/browserInfo';
 import { getEnvironmentPlatform } from './helpers/platform';
 import { getOS } from './helpers/os';
 import { remoteSettingsService } from './services/remoteSettingsService';
+import { idService } from './services/idService';
 import { asyncStoragePlugin } from './asyncStorage/asyncStorage';
 import { localStoragePlugin } from './localStorage/localStorage';
 import moment from 'moment';
 
 class Connector {
   private _eventListenersTable: T.EventListenersTable = {};
-  private _currentInterceptedReduxActionId = 0;
-  private _currentInterceptedStorageActionId = 0;
-  private _currentCapturedEventId = 0;
-  private _currentCrashReportId = 0;
-  private _currentInterceptedTanStackQueryEventId = 0;
   private _connectorInitiated: boolean = false;
   private _apiKey: string = "";
   private _projectInfo: T.ProjectInfo | null = null;
@@ -63,6 +59,10 @@ class Connector {
   private _swizzledWindowUnhandledListeners: boolean = false;
   private _windowInitialOnunhandledrejection: any;
   private _windowInitialOnerror: any;
+  private _sendMobxStateBatchingTimer: NodeJS.Timeout | null = null;
+  private _currentMobxStateCopy: any = null;
+  private _sendMobxEventsBatchingTimer: NodeJS.Timeout | null = null;
+  private _currentMobxEventsBatch: T.InterceptedMobxEventPreparedData[] = [];
 
   public lastEvent: T.RemoteEvent | null = null;
 
@@ -92,11 +92,11 @@ class Connector {
     }
   };
 
-  private _encryptData(json: any): {result: string, ok: boolean} {
+  private _encryptData(json: any, removeCircularReferences?: boolean): {result: string, ok: boolean} {
     if (!this._encryption)
-      return jsonStringifyKeepMeta(json);
+      return jsonStringifyKeepMeta(json, removeCircularReferences);
 
-    return this._encryption.encryptData(json);
+    return this._encryption.encryptData(json, removeCircularReferences);
   };
   
   private _fillInstructionsTable(instructions: T.Instruction[]) {
@@ -380,9 +380,9 @@ class Connector {
   public async codebudHandleDispatchedReduxAction(action: T.InterceptedReduxAction, batchingTimeMs: number) {
     if (this._socket?.connected) {
       const timestamp = moment().valueOf();
-      const actionId = this._currentInterceptedReduxActionId++;
+      const actionId = idService.currentInterceptedReduxActionId;
       const _stackTraceData = await this._getStackTraceFn?.(new Error(''), this._stackTraceOptions);
-      const reduxActionData = {actionId: `RA_${actionId}`, action, timestamp, _stackTraceData};
+      const reduxActionData = {actionId, action, timestamp, _stackTraceData};
       jsonStringifyKeepMeta(reduxActionData).ok && this._currentReduxActionsBatch.push(reduxActionData);
 
       if (this._sendReduxActionsBatchingTimer) 
@@ -423,9 +423,9 @@ class Connector {
   private async _handleInterceptedStorageAction(action: string, data?: any) {
     if (this._socket?.connected) {
       const timestamp = moment().valueOf();
-      const storageActionId = this._currentInterceptedStorageActionId++;
+      const storageActionId = idService.currentInterceptedStorageActionId;
       const _stackTraceData = await this._getStackTraceFn?.(new Error(''), this._stackTraceOptions);
-      const storageActionData = {storageActionId: `SA_${storageActionId}`, action, data, timestamp, _stackTraceData};
+      const storageActionData = {storageActionId, action, data, timestamp, _stackTraceData};
       jsonStringifyKeepMeta(storageActionData).ok && this._currentStorageActionsBatch.push(storageActionData);
 
       if (this._sendStorageActionsBatchingTimer) 
@@ -460,11 +460,11 @@ class Connector {
   public async captureEvent(title: string, data: any) {
     if (this._socket?.connected) {
       const timestamp = moment().valueOf();
-      const capturedEventId = this._currentCapturedEventId++;
+      const capturedEventId = idService.currentCapturedEventId;
 
       const _stackTraceData = await this._getStackTraceFn?.(new Error(''), this._stackTraceOptions);
 
-      const encryptedData = this._encryptData({timestamp, capturedEventId: `UCE_${capturedEventId}`, title, data, _stackTraceData});
+      const encryptedData = this._encryptData({timestamp, capturedEventId, title, data, _stackTraceData});
       encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.CAPTURE_EVENT, encryptedData.result);
     }
   }
@@ -474,7 +474,7 @@ class Connector {
 
     if (this._socket?.connected) {
       const timestamp = moment().valueOf();
-      const crashReportId = this._currentCrashReportId++;
+      const crashReportId = idService.currentCrashReportId;
 
       let _stackTraceData;
       if (this._getStackTraceFn) {
@@ -483,7 +483,7 @@ class Connector {
         else if (type === "React ErrorBoundary" && data.componentStack)
           _stackTraceData = await this._getStackTraceFn(data.componentStack, this._stackTraceOptions);
       }
-      const encryptedData = this._encryptData({timestamp, crashReportId: `ACR_${crashReportId}`, type, data, _stackTraceData});
+      const encryptedData = this._encryptData({timestamp, crashReportId, type, data, _stackTraceData});
       encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.CAPTURE_CRASH_REPORT, encryptedData.result);
     }
   }
@@ -595,9 +595,9 @@ class Connector {
   private async _proceedInterceptedTanStackQueryEvent(event: T.TanStackQueryCacheEvent, batchingTimeMs: number) {
     if (this._socket?.connected) {
       const timestamp = moment().valueOf();
-      const tanStackQueryEventId = this._currentInterceptedTanStackQueryEventId++;
+      const tanStackQueryEventId = idService.currentInterceptedTanStackQueryEventId;
       // const _stackTraceData = await this._getStackTraceFn?.(new Error(''), this._stackTraceOptions);
-      const tanStackQueryEventData: T.InterceptedTanStackQueryEventPreparedData = {tanStackQueryEventId: `TQE_${tanStackQueryEventId}`, event, timestamp};
+      const tanStackQueryEventData: T.InterceptedTanStackQueryEventPreparedData = {tanStackQueryEventId, event, timestamp};
       jsonStringifyKeepMeta(tanStackQueryEventData).ok && this._currentTanStackQueryEventsBatch.push(tanStackQueryEventData);
 
       if (this._sendTanStackQueryEventsBatchingTimer)
@@ -641,7 +641,56 @@ class Connector {
         encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_CONTEXT_VALUE_COPY, encryptedData.result);
       }, waitMs);
     }
-  };
+  }
+
+  public createMobxStoreMonitor(store: any, batchingTimeMs: number): T.MobxStoreMonitor {
+    try {
+      return [
+        () => jsonStringifyPossiblyCircular(store),
+        (currentMobxStateCopyStr: string) => {
+          const previousMobxStateCopyStr = jsonStringifyPossiblyCircular(this._currentMobxStateCopy);
+          this._currentMobxStateCopy = JSON.parse(currentMobxStateCopyStr);
+
+          if (this._socket?.connected && previousMobxStateCopyStr !== currentMobxStateCopyStr) {
+            if (this._sendMobxStateBatchingTimer)
+              clearTimeout(this._sendMobxStateBatchingTimer);
+  
+            this._sendMobxStateBatchingTimer = setTimeout(() => {
+              const encryptedData = this._encryptData({state: this._currentMobxStateCopy, timestamp: moment().valueOf()}); // Here we aren't passing removeCircularReferences flag because to this moment they are already removed
+              encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_MOBX_STATE_COPY, encryptedData.result);
+            }, batchingTimeMs);
+          }
+        }
+      ];
+    } catch (e) {
+      codebudConsoleWarn(`Error while trying to create MobxStoreMonitor`, e);
+      return emptyMobxStoreMonitor;
+    }
+  }
+
+  public createMobxEventHandler(batchingTimeMs: number) {
+    return async (event: T.MobxSpyEvent) => {
+      if (event.type !== "action")
+        return;
+
+      if (this._socket?.connected) {
+        const timestamp = moment().valueOf();
+        const mobxEventId = idService.currentInterceptedMobxEventId;
+        const _stackTraceData = await this._getStackTraceFn?.(new Error(''), this._stackTraceOptions);
+        const mobxEventData = {mobxEventId, event: removeCircularReferencesFromObject(event), timestamp, _stackTraceData};
+        jsonStringifyKeepMeta(mobxEventData).ok && this._currentMobxEventsBatch.push(mobxEventData);
+  
+        if (this._sendMobxEventsBatchingTimer) 
+          clearTimeout(this._sendMobxEventsBatchingTimer);
+  
+        this._sendMobxEventsBatchingTimer = setTimeout(() => {
+          const encryptedData = this._encryptData({events: this._currentMobxEventsBatch});
+          encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_MOBX_EVENTS_BATCH, encryptedData.result);
+          this._currentMobxEventsBatch = [];
+        }, batchingTimeMs);
+      }
+    };
+  }
 
   public disconnect() {
     this._connectorInitiated = false;
@@ -708,6 +757,16 @@ class Connector {
       clearTimeout(this._sendTanStackQueriesDataBatchingTimer);
 
     this._currentTanStackQueriesDataCopy = null;
+
+    if (this._sendMobxStateBatchingTimer)
+      clearTimeout(this._sendMobxStateBatchingTimer);
+  
+    this._currentMobxStateCopy = null;
+
+    if (this._sendMobxEventsBatchingTimer)
+      clearTimeout(this._sendMobxEventsBatchingTimer);
+
+    this._currentMobxEventsBatch = [];
       
     this._unsubscribeFromTanStackQueryEvents?.();
     this._unsubscribeFromTanStackQueryEvents = undefined;

@@ -1,4 +1,5 @@
 import { EventHandleError, ScenarioHandleError } from "../Errors";
+import { MobxSpyEvent } from "./mobxSpyEventTypes";
 import { TanStackQueryCacheEvent } from "./tanstackQueryCacheNotifyEventTypes";
 
 export type ObjectT<T> = {[key: string]: T};
@@ -226,5 +227,16 @@ export type TanStackGetQueriesDataReturnType = ([TanStackQueryKey, TanStackQuery
 export type InterceptedTanStackQueryEventPreparedData = WithStackTrace<{
   tanStackQueryEventId: string;
   event: TanStackQueryCacheEvent;
+  timestamp: number;
+}>;
+
+export type MobxStoreMonitor = [
+  () => string,
+  (s: string) => void
+];
+
+export type InterceptedMobxEventPreparedData = WithStackTrace<{
+  mobxEventId: string;
+  event: MobxSpyEvent;
   timestamp: number;
 }>;

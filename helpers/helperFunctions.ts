@@ -1,5 +1,5 @@
 import { CONFIG } from "../config";
-import { ObjectT } from "../types/types";
+import { ObjectT, MobxStoreMonitor } from "../types/types";
 import { payloadSizeValidator } from "./payloadSizeValidator";
 
 export function delay(ms: number) {
@@ -13,6 +13,13 @@ export const stringifyIfNotString = (data: any) => {
   }
 
   return JSON.stringify(data);
+}
+
+export const wrapInObjectIfNotObject = (obj: any, fallbackDataKey: string = "data") => {
+  if (typeof obj === "object")
+    return obj;
+
+  return {[fallbackDataKey]: obj};
 }
 
 const memo = {
@@ -39,8 +46,29 @@ export const codebudConsoleLog = (...data: any[]) => {
   console.log(`${CONFIG.PRODUCT_NAME}:`, ...data);
 }
 
-export const emptyMiddleware = () => (next: any) => (action: any) => {
-  return next(action);
+export const emptyMobxStoreMonitor: MobxStoreMonitor = [
+  () => "",
+  () => {}
+];
+
+export const jsonStringifyPossiblyCircular = (data: ObjectT<any>) => {
+  const seen = new WeakSet();
+
+  return JSON.stringify(
+    data, 
+    (k, v) => {
+      if (typeof v === 'object' && v) {
+        if (seen.has(v)) 
+          return;
+        seen.add(v);
+      }
+      return v;
+    }
+  );
+}
+
+export const removeCircularReferencesFromObject = (data: ObjectT<any>) => {
+  return JSON.parse(jsonStringifyPossiblyCircular(data));
 }
 
 export const getFormDataMeta = (fData: FormData) => {
@@ -70,7 +98,7 @@ export const getFormDataMeta = (fData: FormData) => {
 }
 
 // Custom JSON.stringify wrapper that keeps as much metadata as possible
-export const jsonStringifyKeepMeta = (data: ObjectT<any>): {result: string, ok: boolean} => {
+export const jsonStringifyKeepMeta = (data: ObjectT<any>, removeCircularReferences: boolean = false): {result: string, ok: boolean} => {
   const dataStringified = JSON.stringify(
     data,
     function(key, value) {
@@ -78,7 +106,13 @@ export const jsonStringifyKeepMeta = (data: ObjectT<any>): {result: string, ok: 
 
       switch (type) {
         case "object":
-          return (value instanceof FormData) ? getFormDataMeta(value) : value;
+          if (value instanceof FormData)
+            return getFormDataMeta(value);
+
+          if (removeCircularReferences && value)
+            return removeCircularReferencesFromObject(value);
+
+          return value;
         case "function":
           return "Function (...)";
         default:

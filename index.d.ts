@@ -177,6 +177,11 @@ declare module '@appklaar/codebud' {
 
   export type RefreshPersonalProjectsSettingCallback = (s: PersonalProjectsSetting) => void;
 
+  type MobxStoreMonitor = [
+    () => string,
+    (s: string) => void
+  ];
+
   export interface AppKlaarSdk {
     /**
      * Initialize the module.
@@ -288,6 +293,19 @@ declare module '@appklaar/codebud' {
      * @returns {Function} Unsubscribe function.
      */
     monitorTanStackQueryEvents: (queryClient: any, batchingTimeMs?: number) => (() => void),
+    /**
+     * Function that creates Mobx Store Monitor, that you can use to subscribe to Store Changes.
+     * @param {any} store Your store.
+     * @param {number} [batchingTimeMs = 500] batching time of sending new mobx state copy (in ms). Defaults to 500
+     * @returns {MobxStoreMonitor} Expression and effect as a tuple for Mobx reaction.
+     */
+    createMobxStoreMonitor: (store: any, batchingTimeMs?: number) => MobxStoreMonitor,
+    /**
+     * Function that creates MobX listener for events monitoring.
+     * @param {number} [batchingTimeMs = 300] batching time of sending MobX events (in ms). Defaults to 300.
+     * @returns {Function} Listener function.
+     */
+    createMobxEventHandler: (batchingTimeMs?: number) => ((event: any) => void),
     /**
      * Close the connection.
      */

@@ -4,7 +4,7 @@ import { MODULE_STATES } from './States';
 import { validateApiKey } from './constants/regex';
 import { AppKlaarSdk as ModuleInterface } from './moduleInterface';
 import { CONFIG } from './config';
-import { codebudConsoleWarn } from './helpers/helperFunctions';
+import { codebudConsoleWarn, emptyMobxStoreMonitor } from './helpers/helperFunctions';
 import { prepareInstructionsFromInstructionsAndGroups, validateInstructions } from './helpers/instructionsHelpers';
 import { updateAuthorizationHeaderWithApiKey } from './api/api';
 import { remoteSettingsService } from './services/remoteSettingsService';
@@ -193,6 +193,34 @@ export const CodeBud: ModuleInterface = {
         throw new Error(`Something went wrong while enabling TanStack Query events monitor. Double check that you initialized ${CONFIG.PRODUCT_NAME}`);
 
       return connector.monitorTanStackQueryEvents(queryClient, batchingTimeMs);
+    } catch (e) {
+      if (this._mode === "dev")
+        codebudConsoleWarn(e);
+
+      return () => {};
+    }
+  },
+
+  createMobxStoreMonitor(store, batchingTimeMs = 500) {
+    try {
+      if (!connector.isInit)
+        throw new Error(`Something went wrong while creating MobxStoreMonitor. Double check that you initialized ${CONFIG.PRODUCT_NAME}`);
+
+      return connector.createMobxStoreMonitor(store, batchingTimeMs);
+    } catch (e) {
+      if (this._mode === "dev")
+        codebudConsoleWarn(e);
+
+      return emptyMobxStoreMonitor;
+    }
+  },
+
+  createMobxEventHandler(batchingTimeMs = 300) {
+    try {
+      if (!connector.isInit)
+        throw new Error(`Something went wrong while creating MobxEventHandler. Double check that you initialized ${CONFIG.PRODUCT_NAME}`);
+
+      return connector.createMobxEventHandler(batchingTimeMs);
     } catch (e) {
       if (this._mode === "dev")
         codebudConsoleWarn(e);
