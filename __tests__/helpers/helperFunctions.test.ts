@@ -1,5 +1,5 @@
 import { test, expect } from '@jest/globals';
-import { stringifyIfNotString, jsonStringifyKeepMeta, wrapInObjectIfNotObject, jsonStringifyPossiblyCircular, removeCircularReferencesFromObject } from './../../helpers/helperFunctions';
+import { stringifyIfNotString, jsonStringifyKeepMeta, wrapInObjectIfNotObject, jsonReplacerWithPath, jsonRefReplacer, parseRefJSON, jsonStringifyPossiblyCircular, removeCircularReferencesFromObject } from './../../helpers/helperFunctions';
 import { makeRandomString } from './../../helpers/random';
 import { CONFIG } from '../../config';
 
@@ -67,6 +67,47 @@ test("wrapInObjectIfNotObject test", () => {
   expect(test7).toEqual({a: 1, b: 2, c: 3});
 });
 
+test("jsonReplacerWithPath test", () => {
+  const a = { a1: 1, a2: 1 };
+  const b = { b1: 2, b2: [1, a] };
+  const c = { c1: 3, c2: b };
+
+  const test1: string[] = [];
+  const s = JSON.stringify(c, jsonReplacerWithPath(function(this: any, field: string, value: any, path: string) {
+    test1.push(path);
+    return value;
+  }));
+
+  expect(test1).toEqual(["", "c1", "c2", "c2.b1", "c2.b2", "c2.b2[0]", "c2.b2[1]", "c2.b2[1].a1", "c2.b2[1].a2"])
+  expect(s).toEqual(JSON.stringify(c));
+});
+
+test("jsonRefReplacer test", () => {
+  // Creating object with duplicate references
+  const a: any = { a1: 1, a2: 2 };
+  const b: any = { b1: 3, b2: "4" };
+  const obj: any = { o1: { o2:  a  }, b, a }; // duplicate reference
+  a.a3 = [1 ,2, b]; // circular reference
+  b.b3 = a; // circular reference
+
+  const test1 = JSON.stringify(obj, jsonRefReplacer());
+  expect(test1).toEqual(`{"o1":{"o2":{"a1":1,"a2":2,"a3":[1,2,{"b1":3,"b2":"4","b3":"#REF:$.o1.o2"}]}},"b":"#REF:$.o1.o2.a3[2]","a":"#REF:$.o1.o2"}`);
+});
+
+test("parseRefJSON test", () => {
+  // Creating object with duplicate references
+  const a: any = { a1: 1, a2: 2 };
+  const b: any = { b1: 3, b2: "4" };
+  const obj: any = { o1: { o2:  a  }, b, a }; // duplicate reference
+  a.a3 = [1, 2, b]; // circular reference
+  b.b3 = a; // circular reference
+
+  const s = JSON.stringify(obj, jsonRefReplacer());
+
+  const test1 = parseRefJSON(s);
+  expect(test1).toEqual(obj);
+});
+
 test("jsonStringifyPossiblyCircular test", () => {
   const test1 = jsonStringifyPossiblyCircular([]);
   const test2 = jsonStringifyPossiblyCircular({});
@@ -84,7 +125,7 @@ test("jsonStringifyPossiblyCircular test", () => {
   expect(test3).toEqual(`{"a":1,"b":2,"c":3}`);
   expect(test4).toEqual(`{"a":{"x":1,"y":2},"b":{"x":0,"y":-1}}`);
   expect(test4Reversed).toEqual(data4);
-  expect(test5).toEqual(`{"data":"123"}`);
+  expect(test5).toEqual(`{"data":"123","circ":"#REF:$"}`);
 });
 
 test("removeCircularReferencesFromObject test", () => {
@@ -110,12 +151,17 @@ test("removeCircularReferencesFromObject test", () => {
 
   const test6 = removeCircularReferencesFromObject(innerRecursiveLinksObject);
 
+  // console.log("test6", test6);
+
   expect(test1).toEqual(a);
   expect(test2).toEqual(b);
   expect(test3).toEqual(c);
   expect(test4).toEqual(d);
-  expect(test5).toEqual({data: "123"});
-  expect(test6).toEqual({aRefersToB: { x: 10, linkB: { y: 100 } }});
+  expect(test5).toEqual({data: "123", circ: "#REF:$"});
+  expect(test6).toEqual({
+    aRefersToB: { x: 10, linkB: { linkA: "#REF:$.aRefersToB", y: 100 } },
+    bRefersToA: "#REF:$.aRefersToB.linkB"
+  });
 });
 
 test("jsonStringifyKeepMeta test", () => {
@@ -153,5 +199,5 @@ test("jsonStringifyKeepMeta test", () => {
 
   const test4 = jsonStringifyKeepMeta(data3, true);
   expect(test4.ok).toBe(true);
-  expect(test4.result).toEqual(`{"a":101,"b":"abc","c":true,"d":null,"f":[1,2,3],"g":{"x":10,"y":12},"circularObject":{"data":"123"}}`);
+  expect(test4.result).toEqual(`{"a":101,"b":"abc","c":true,"d":null,"f":[1,2,3],"g":{"x":10,"y":12},"circularObject":{"data":"123","circ":"#REF:$.circularObject"}}`);
 });

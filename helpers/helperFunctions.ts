@@ -51,19 +51,106 @@ export const emptyMobxStoreMonitor: MobxStoreMonitor = [
   () => {}
 ];
 
-export const jsonStringifyPossiblyCircular = (data: ObjectT<any>) => {
-  const seen = new WeakSet();
+// JSON.stringify replacer function constructor that adds full path to current position as last arg of replacer
+// Explanation fo replacerWithPath decorator:
+// > 'this' inside 'return function' point to field parent object
+//   (JSON.stringify execute replacer like that)
+// > 'path' contains path to current field based on parent ('this') path
+//   previously saved in Map
+// > during path generation we check is parent ('this') array or object
+//   and chose: "[field]" or ".field"
+// > in Map we store current 'path' for given 'field' only if it 
+//   is obj or arr in this way path to each parent is stored in Map. 
+//   We don't need to store path to simple types (number, bool, ...) because they never will have children
+// > value === Object(value) -> is true if value is object or array
+// > path for main object parent is set as 'undefined.' so we cut out that
+//   prefix at the end ad call replacer with that path
+// Test example:
+// let a = { a1: 1, a2: 1 };
+// let b = { b1: 2, b2: [1, a] };
+// let c = { c1: 3, c2: b };
 
+// let s = JSON.stringify(c, replacerWithPath(function(field, value, path) {
+//   // "this" has same value as in replacer without decoration
+//   console.log(path);
+//   return value;
+// })); 
+export const jsonReplacerWithPath = (replacer: ((this: any, key: string, value: any, path: string) => any)) => {
+  const m = new Map();
+
+  return function(this: any, field: string, value: any) {
+    const path = m.get(this) + (Array.isArray(this) ? `[${field}]` : '.' + field); 
+
+    if (value === Object(value)) 
+      m.set(value, path);
+
+    // @ts-ignore (4th arg is additional one, thats a whole point)
+    return replacer.call(this, field, value, path.replace(/undefined\.\.?/,''));
+  }
+}
+
+// JSON.stringify replacer function constructor for ref replacing (uses same idea as replacerWithPathDecorator)
+export const jsonRefReplacer = () => {
+  const m = new Map();
+  const v = new Map();
+  let init: any = null;
+
+  return function(this: any, field: string, value: any) {
+    const p = m.get(this) + (Array.isArray(this) ? `[${field}]` : '.' + field); 
+    const isComplex = value === Object(value);
+    
+    if (isComplex) 
+      m.set(value, p);  
+    
+    const pp = v.get(value) || '';
+    const path = p.replace(/undefined\.\.?/,'');
+    let val = pp ? `#REF:${pp[0] == '[' ? '$' : '$.'}${pp}` : value;
+    
+    !init ? (init = value) : (val === init ? val = "#REF:$" : 0);
+    if (!pp && isComplex)
+      v.set(value, path);
+   
+    return val;
+  }
+}
+
+// JSON.parse but for objects that were stringified with jsonRefReplacer
+export const parseRefJSON = (json: string) => {
+  const objToPath = new Map();
+  const pathToObj = new Map();
+  let o = JSON.parse(json);
+  
+  const traverse = (parent: any, field?: string) => {
+    let obj = parent;
+    let path = '#REF:$';
+
+    if (field !== undefined) {
+      obj = parent[field];
+      path = objToPath.get(parent) + (Array.isArray(parent) ? `[${field}]` : `${field ? '.' + field : ''}`);
+    }
+
+    objToPath.set(obj, path);
+    pathToObj.set(path, obj);
+    
+    let ref = pathToObj.get(obj);
+    // @ts-ignore
+    if (ref) parent[field] = ref;
+
+    for (let f in obj)
+      if (obj === Object(obj))
+        traverse(obj, f);
+  }
+  
+  traverse(o);
+
+  return o;
+}
+
+
+export const jsonStringifyPossiblyCircular = (data: ObjectT<any>) => {
   return JSON.stringify(
     data, 
-    (k, v) => {
-      if (typeof v === 'object' && v) {
-        if (seen.has(v)) 
-          return;
-        seen.add(v);
-      }
-      return v;
-    }
+    jsonRefReplacer()
   );
 }
 
