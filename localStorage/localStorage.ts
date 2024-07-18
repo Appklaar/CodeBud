@@ -1,3 +1,7 @@
+import { CONFIG } from "./../config";
+import { codebudConsoleWarn, errorToJSON, stringIsJson } from "./../helpers/helperFunctions";
+import { ObjectT } from "./../types";
+
 type ConnectorContext = {
   _localStorageHandler: any;
   _handleInterceptedStorageAction: (action: string, data?: any) => void;
@@ -43,6 +47,30 @@ export function localStoragePlugin (this: ConnectorContext, ignoreKeys: string[]
     swizzRemoveItem(key);
   }
 
+  const getEntireLocalStorageAsObject = (): ObjectT<any> => {
+    try {
+      if (!isSwizzled) 
+        throw new Error("localStorage monitor not set up");
+
+      const obj = {...this._localStorageHandler};
+      const keys = Object.keys(obj);
+
+      if (keys.length > CONFIG.PAYLOAD_LIMITS.MAX_KEYS_IN_STORAGE)
+        throw new Error(`localStorage is too large to handle (${keys.length} keys found)`);
+
+      for (const key of keys)
+        if (stringIsJson(obj[key]))
+          obj[key] = JSON.parse(obj[key]);
+
+      return obj;
+    } catch (e) {
+      const info = "Unable to prepare entire localStorage as object";
+      codebudConsoleWarn(info, e);
+
+      return { info, error: errorToJSON(e) };
+    }
+  }
+
   const trackLocalStorage = () => {
     if (isSwizzled) 
       return;
@@ -81,6 +109,7 @@ export function localStoragePlugin (this: ConnectorContext, ignoreKeys: string[]
 
   return {
     trackLocalStorage,
+    getEntireLocalStorageAsObject,
     untrackLocalStorage
   };
 }

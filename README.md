@@ -8,6 +8,7 @@ JavaScript package for remote app testing & debugging
 * Redux state observer + action monitor
 * Zustand state observer
 * TanStack query observer
+* MobX state observer
 * React contexts monitoring
 * Storage actions monitoring
 * Feature management

@@ -12,6 +12,7 @@ const SOCKET_EVENTS_LISTEN = {
   DISCONNECT: "disconnect",
   SAVE_NEW_REMOTE_SETTINGS: "saveNewRemoteSettings",
   ADMIN_CONNECTED: "ADMIN_CONNECTED",
+  FORCE_REFRESH: "forceRefresh"
 };
 
 const SOCKET_EVENTS_EMIT = {
@@ -27,6 +28,7 @@ const SOCKET_EVENTS_EMIT = {
   SAVE_INTERCEPTED_RESPONSE: "saveInterceptedResponse",
   SAVE_MOBILE_APP_STATE: "saveMobileAppState",
   SAVE_INTERCEPTED_STORAGE_ACTIONS_BATCH: "saveInterceptedStorageActionsBatch",
+  SAVE_FULL_STORAGE_SNAPSHOT: "saveFullStorageSnapshot",
   CAPTURE_EVENT: "captureEvent",
   CAPTURE_CRASH_REPORT : "captureCrashReport",
   SAVE_TANSTACK_QUERIES_DATA_COPY: "saveTanStackQueriesDataCopy",

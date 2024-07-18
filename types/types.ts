@@ -240,3 +240,15 @@ export type InterceptedMobxEventPreparedData = WithStackTrace<{
   event: MobxSpyEvent;
   timestamp: number;
 }>;
+
+export type StorageType = "unknown" | "localStorage" | "AsyncStorage";
+
+export type ForceRefreshPayload = {
+  type: "storage";
+};
+
+export type StorageSnapshot = {
+  timestamp: number;
+  storageType: StorageType;
+  storageAsObject: ObjectT<any>;
+};

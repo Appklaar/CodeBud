@@ -1,3 +1,7 @@
+import { CONFIG } from "./../config";
+import { codebudConsoleWarn, errorToJSON, stringIsJson } from "./../helpers/helperFunctions";
+import { ObjectT } from "./../types";
+
 type ConnectorContext = {
   _asyncStorageHandler: any;
   _handleInterceptedStorageAction: (action: string, data?: any) => void;
@@ -114,6 +118,32 @@ export function asyncStoragePlugin (this: ConnectorContext, ignoreKeys: string[]
     return swizzMultiMerge(pairs, callback)
   }
 
+  const getEntireAsyncStorageAsObject = async (): Promise<ObjectT<any>> => {
+    try {
+      if (!isSwizzled) 
+        throw new Error("AsyncStorage monitor not set up");
+
+      const keys = await this._asyncStorageHandler.getAllKeys();
+
+      if (keys.length > CONFIG.PAYLOAD_LIMITS.MAX_KEYS_IN_STORAGE)
+        throw new Error(`AsyncStorage is too large to handle (${keys.length} keys found)`);
+
+      const values = await swizzMultiGet(keys);
+      const obj: ObjectT<any> = {};
+      
+      values.forEach(([key, value]: [string, string]) => {
+        obj[key] = stringIsJson(value) ? JSON.parse(value) : value;
+      });
+
+      return obj;
+    } catch (e) {
+      const info = "Unable to prepare entire AsyncStorage as object";
+      codebudConsoleWarn(info, e);
+
+      return { info, error: errorToJSON(e) };
+    }
+  }
+
   const trackAsyncStorage = () => {
     if (isSwizzled) 
       return;
@@ -172,6 +202,7 @@ export function asyncStoragePlugin (this: ConnectorContext, ignoreKeys: string[]
 
   return {
     trackAsyncStorage,
+    getEntireAsyncStorageAsObject,
     untrackAsyncStorage
   };
 }

@@ -7,7 +7,7 @@
   "scripts": {
     "test": "jest",
     "start": "ts-node index.ts",
-    "build": "tsc --build tsconfig.build.json",
+    "build": "tsc --build tsconfig.build.json --diagnostics",
     "clean": "tsc --build --clean"
   },
   "author": "Aleksandr Nikolotov",

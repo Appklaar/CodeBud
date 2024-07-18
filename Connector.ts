@@ -38,9 +38,11 @@ class Connector {
   private _encryption: any = null;
   private _asyncStorageHandler: any = null;
   private _trackAsyncStorage: (() => void) | undefined;
+  private _getEntireAsyncStorageAsObject: (() => Promise<T.ObjectT<any>>) | undefined;
   private _untrackAsyncStorage: (() => void) | undefined;
   private _localStorageHandler: any = null;
   private _trackLocalStorage: (() => void) | undefined;
+  private _getEntireLocalStorageAsObject: (() => T.ObjectT<any>) | undefined;
   private _untrackLocalStorage: (() => void) | undefined;
   private _storageActionsBatchingTimeMs: number = 500;
   private _sendStorageActionsBatchingTimer: NodeJS.Timeout | null = null;
@@ -270,6 +272,32 @@ class Connector {
     );
   };
 
+  private async _getEntireStorageAsObject() {
+    let obj: T.ObjectT<any>;
+    let storageType: T.StorageType = "unknown";
+
+    if (this._getEntireLocalStorageAsObject) {
+      obj = this._getEntireLocalStorageAsObject();
+      storageType = "localStorage";
+    } else if (this._getEntireAsyncStorageAsObject) {
+      obj = await this._getEntireAsyncStorageAsObject();
+      storageType = "AsyncStorage";
+    } else {
+      const info = "Unable to get entire storage as object: No AsyncStorage / localStorage monitor set up";
+      codebudConsoleWarn(info);
+      obj = {info};
+    }
+
+    const storageSnapshot: T.StorageSnapshot = {
+      timestamp: moment().valueOf(),
+      storageType,
+      storageAsObject: obj
+    };
+
+    const encryptedData = this._encryptData(storageSnapshot);
+    encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_FULL_STORAGE_SNAPSHOT, encryptedData.result);
+  };
+
   public init(apiKey: string, instructions: T.Instruction[], usersCustomCallback: T.OnEventUsersCustomCallback, config?: T.PackageConfig) {
     this._apiKey = apiKey;
     this._fillInstructionsTable(instructions);
@@ -331,6 +359,16 @@ class Connector {
     });
 
     this._socket.on(SOCKET_EVENTS_LISTEN.SAVE_NEW_REMOTE_SETTINGS, (r: T.RemoteSettings) => remoteSettingsService.onGotNewRemoteSettings(r));
+
+    this._socket.on(SOCKET_EVENTS_LISTEN.FORCE_REFRESH, (data: T.ForceRefreshPayload) => {
+      switch (data.type) {
+        case "storage":
+          this._getEntireStorageAsObject();
+          break;
+        default:
+          break;
+      }
+    });
 
     this._socket.on(SOCKET_EVENTS_LISTEN.CONNECT_ERROR, (err) => {
       codebudConsoleWarn(`Socket connect_error: ${err.message}`);
@@ -445,6 +483,7 @@ class Connector {
     // passing Connector class context to asyncStoragePlugin function
     const controlFunctions = asyncStoragePlugin.bind(this as any)(ignoreKeys);
     this._trackAsyncStorage = controlFunctions.trackAsyncStorage;
+    this._getEntireAsyncStorageAsObject = controlFunctions.getEntireAsyncStorageAsObject;
     this._untrackAsyncStorage = controlFunctions.untrackAsyncStorage;
   }
 
@@ -454,6 +493,7 @@ class Connector {
     // passing Connector class context to localStoragePlugin function
     const controlFunctions = localStoragePlugin.bind(this as any)(ignoreKeys);
     this._trackLocalStorage = controlFunctions.trackLocalStorage;
+    this._getEntireLocalStorageAsObject = controlFunctions.getEntireLocalStorageAsObject;
     this._untrackLocalStorage = controlFunctions.untrackLocalStorage;
   }
 
@@ -729,6 +769,7 @@ class Connector {
     if (this._asyncStorageHandler) {
       this._untrackAsyncStorage?.();
       this._untrackAsyncStorage = undefined;
+      this._getEntireAsyncStorageAsObject = undefined;
       this._trackAsyncStorage = undefined;
       this._asyncStorageHandler = null;
     }
@@ -736,6 +777,7 @@ class Connector {
     if (this._localStorageHandler) {
       this._untrackLocalStorage?.();
       this._untrackLocalStorage = undefined;
+      this._getEntireLocalStorageAsObject = undefined;
       this._trackLocalStorage = undefined;
       this._localStorageHandler = null;
     }
