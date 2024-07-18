@@ -51,6 +51,17 @@ export const emptyMobxStoreMonitor: MobxStoreMonitor = [
   () => {}
 ];
 
+export const stringIsJson = (s: string) => {
+  let value;
+
+  try {
+    value = JSON.parse(s);
+  } catch (e) {
+    return false;
+  }
+  return typeof value === "object";
+}
+
 // JSON.stringify replacer function constructor that adds full path to current position as last arg of replacer
 // Explanation fo replacerWithPath decorator:
 // > 'this' inside 'return function' point to field parent object
