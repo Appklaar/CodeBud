@@ -1,5 +1,5 @@
 import { test, expect } from '@jest/globals';
-import { stringifyIfNotString, jsonStringifyKeepMeta, wrapInObjectIfNotObject, jsonReplacerWithPath, jsonRefReplacer, parseRefJSON, jsonStringifyPossiblyCircular, removeCircularReferencesFromObject } from './../../helpers/helperFunctions';
+import { stringifyIfNotString, jsonStringifyKeepMeta, wrapInObjectIfNotObject, jsonReplacerWithPath, jsonRefReplacer, parseRefJSON, jsonStringifyPossiblyCircular, removeCircularReferencesFromObject, stringIsJson } from './../../helpers/helperFunctions';
 import { makeRandomString } from './../../helpers/random';
 import { CONFIG } from '../../config';
 
@@ -65,6 +65,26 @@ test("wrapInObjectIfNotObject test", () => {
   expect(test5).toEqual([]);
   expect(test6).toEqual({});
   expect(test7).toEqual({a: 1, b: 2, c: 3});
+});
+
+test("stringIsJson test", () => {
+  const test1 = stringIsJson("");
+  const test2 = stringIsJson("123");
+  const test3 = stringIsJson("undefined");
+  const test4 = stringIsJson("true");
+  const test5 = stringIsJson(JSON.stringify([]));
+  const test6 = stringIsJson(JSON.stringify({}));
+  const test7 = stringIsJson(JSON.stringify([1, 2, "3", true, false, null, {}]));
+  const test8 = stringIsJson(JSON.stringify({a: "x", b: "y", c: "z", d: {e: "."}}));
+
+  expect(test1).toBe(false);
+  expect(test2).toBe(false);
+  expect(test3).toBe(false);
+  expect(test4).toBe(false);
+  expect(test5).toBe(true);
+  expect(test6).toBe(true);
+  expect(test7).toBe(true);
+  expect(test8).toBe(true);
 });
 
 test("jsonReplacerWithPath test", () => {
