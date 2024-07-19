@@ -1,5 +1,6 @@
 import * as T from './types';
 import { CONFIG } from './config';
+import { Singleton } from './helpers/classes';
 import { EventHandleError, ScenarioHandleError } from './Errors';
 import { SOCKET_EVENTS_LISTEN, SOCKET_EVENTS_EMIT } from './api/api';
 import { SPECIAL_INSTRUCTIONS_TABLE, SPECIAL_INSTRUCTIONS } from './constants/events';
@@ -15,8 +16,7 @@ import { asyncStoragePlugin } from './asyncStorage/asyncStorage';
 import { localStoragePlugin } from './localStorage/localStorage';
 import moment from 'moment';
 
-class Connector {
-  private static _hasInstance = false;
+class Connector extends Singleton {
   private _eventListenersTable: T.EventListenersTable = {};
   private _connectorInitiated: boolean = false;
   private _apiKey: string = "";
@@ -70,10 +70,7 @@ class Connector {
   public lastEvent: T.RemoteEvent | null = null;
 
   constructor() {
-    if (Connector._hasInstance)
-      throw new Error("Attempted to create second instance of a Singleton class!");
-
-    Connector._hasInstance = true;
+    super("Connector");
   };
 
   public addEventListener(key: string, handler: (event: T.RemoteEvent) => any) {

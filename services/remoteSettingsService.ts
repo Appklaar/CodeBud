@@ -1,11 +1,11 @@
+import { Singleton } from "./../helpers/classes";
 import { validateHexId24Symbols } from "../constants/regex";
 import { codebudConsoleWarn } from "../helpers/helperFunctions";
 import { PersonalProjectsSetting, RefreshPersonalProjectsSettingCallback, RefreshRemoteSettingsCallback, RemoteSettings, RemoteSettingsListenersTable } from "../types/types";
 import { api } from './../api/api';
 import { classicApiResponseValidator } from './../helpers/apiResponseValidators';
 
-class RemoteSettingsService {
-  private static _hasInstance = false;
+class RemoteSettingsService extends Singleton {
   private _projectId: string = "";
   private _apiKey: string = "";
   private _isInit: boolean = false;
@@ -23,10 +23,7 @@ class RemoteSettingsService {
   };
 
   constructor() {
-    if (RemoteSettingsService._hasInstance)
-      throw new Error("Attempted to create second instance of a Singleton class!");
-
-    RemoteSettingsService._hasInstance = true;
+    super("RemoteSettingsService");
   }
 
   public onGotNewRemoteSettings(r: RemoteSettings) {

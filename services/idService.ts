@@ -1,5 +1,6 @@
-class IdService {
-  private static _hasInstance = false;
+import { Singleton } from "./../helpers/classes";
+
+class IdService extends Singleton {
   private _currentInterceptedReduxActionId = 0;
   private _currentInterceptedStorageActionId = 0;
   private _currentCapturedEventId = 0;
@@ -8,10 +9,7 @@ class IdService {
   private _currentInterceptedMobxEventId = 0;
 
   constructor() {
-    if (IdService._hasInstance)
-      throw new Error("Attempted to create second instance of a Singleton class!");
-
-    IdService._hasInstance = true;
+    super("IdService");
   }
 
   public get currentInterceptedReduxActionId() {
