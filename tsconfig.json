@@ -11,6 +11,7 @@
     "noImplicitAny": false,
     "noEmitOnError": true,
     "outDir": "build",
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "useDefineForClassFields": false
   }
 }
