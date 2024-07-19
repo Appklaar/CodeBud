@@ -1,9 +1,11 @@
+import { singletonClass } from "./../decorators";
 import { validateHexId24Symbols } from "../constants/regex";
 import { codebudConsoleWarn } from "../helpers/helperFunctions";
 import { PersonalProjectsSetting, RefreshPersonalProjectsSettingCallback, RefreshRemoteSettingsCallback, RemoteSettings, RemoteSettingsListenersTable } from "../types/types";
 import { api } from './../api/api';
 import { classicApiResponseValidator } from './../helpers/apiResponseValidators';
 
+@singletonClass
 class RemoteSettingsService {
   private _projectId: string = "";
   private _apiKey: string = "";

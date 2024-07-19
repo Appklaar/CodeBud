@@ -1,0 +1,1 @@
+export { singletonClass } from "./singletonClass";

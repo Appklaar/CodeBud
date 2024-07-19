@@ -1,5 +1,6 @@
 import * as T from './types';
 import { CONFIG } from './config';
+import { singletonClass } from './decorators';
 import { EventHandleError, ScenarioHandleError } from './Errors';
 import { SOCKET_EVENTS_LISTEN, SOCKET_EVENTS_EMIT } from './api/api';
 import { SPECIAL_INSTRUCTIONS_TABLE, SPECIAL_INSTRUCTIONS } from './constants/events';
@@ -15,6 +16,7 @@ import { asyncStoragePlugin } from './asyncStorage/asyncStorage';
 import { localStoragePlugin } from './localStorage/localStorage';
 import moment from 'moment';
 
+@singletonClass
 class Connector {
   private _eventListenersTable: T.EventListenersTable = {};
   private _connectorInitiated: boolean = false;

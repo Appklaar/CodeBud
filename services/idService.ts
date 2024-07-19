@@ -1,3 +1,6 @@
+import { singletonClass } from "./../decorators";
+
+@singletonClass
 class IdService {
   private _currentInterceptedReduxActionId = 0;
   private _currentInterceptedStorageActionId = 0;
