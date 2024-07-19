@@ -1,7 +1,5 @@
-import { singletonClass } from "./../decorators";
-
-@singletonClass
 class IdService {
+  private static _hasInstance = false;
   private _currentInterceptedReduxActionId = 0;
   private _currentInterceptedStorageActionId = 0;
   private _currentCapturedEventId = 0;
@@ -9,7 +7,12 @@ class IdService {
   private _currentInterceptedTanStackQueryEventId = 0;
   private _currentInterceptedMobxEventId = 0;
 
-  constructor() {}
+  constructor() {
+    if (IdService._hasInstance)
+      throw new Error("Attempted to create second instance of a Singleton class!");
+
+    IdService._hasInstance = true;
+  }
 
   public get currentInterceptedReduxActionId() {
     return `RA_${this._currentInterceptedReduxActionId++}`;
