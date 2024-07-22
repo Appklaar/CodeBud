@@ -22,10 +22,6 @@ class RemoteSettingsService extends Singleton {
     delete this._remoteSettingsListenersTable[key];
   };
 
-  constructor() {
-    super("RemoteSettingsService");
-  }
-
   public onGotNewRemoteSettings(r: RemoteSettings) {
     if (!this._isInit)
       return;

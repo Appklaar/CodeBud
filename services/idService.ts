@@ -8,10 +8,6 @@ class IdService extends Singleton {
   private _currentInterceptedTanStackQueryEventId = 0;
   private _currentInterceptedMobxEventId = 0;
 
-  constructor() {
-    super("IdService");
-  }
-
   public get currentInterceptedReduxActionId() {
     return `RA_${this._currentInterceptedReduxActionId++}`;
   }

@@ -69,10 +69,6 @@ class Connector extends Singleton {
 
   public lastEvent: T.RemoteEvent | null = null;
 
-  constructor() {
-    super("Connector");
-  };
-
   public addEventListener(key: string, handler: (event: T.RemoteEvent) => any) {
     this._eventListenersTable[key] = handler;
   };
