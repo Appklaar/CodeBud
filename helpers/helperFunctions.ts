@@ -59,7 +59,7 @@ export const stringIsJson = (s: string) => {
   } catch (e) {
     return false;
   }
-  return typeof value === "object";
+  return typeof value === "object" && value !== null;
 }
 
 // JSON.stringify replacer function constructor that adds full path to current position as last arg of replacer

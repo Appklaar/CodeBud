@@ -76,6 +76,7 @@ test("stringIsJson test", () => {
   const test6 = stringIsJson(JSON.stringify({}));
   const test7 = stringIsJson(JSON.stringify([1, 2, "3", true, false, null, {}]));
   const test8 = stringIsJson(JSON.stringify({a: "x", b: "y", c: "z", d: {e: "."}}));
+  const test9 = stringIsJson("null");
 
   expect(test1).toBe(false);
   expect(test2).toBe(false);
@@ -85,6 +86,7 @@ test("stringIsJson test", () => {
   expect(test6).toBe(true);
   expect(test7).toBe(true);
   expect(test8).toBe(true);
+  expect(test9).toBe(false);
 });
 
 test("jsonReplacerWithPath test", () => {
