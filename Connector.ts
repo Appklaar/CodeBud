@@ -252,18 +252,21 @@ class Connector extends Singleton {
   }
 
   private async _setupNetworkMonitor(config: T.PackageConfig) {
-    this._networkInterceptor = new config.Interceptor({
-      onRequest: ({ request, requestId }: T.NetworkInterceptorOnRequestPayload) => {
-        const timestamp = moment().valueOf();
-        const encryptedData = this._encryptData({request, requestId, timestamp});
-        encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_REQUEST, encryptedData.result);
+    this._networkInterceptor = new config.Interceptor(
+      {
+        onRequest: ({ request, requestId }: T.NetworkInterceptorOnRequestPayload) => {
+          const timestamp = moment().valueOf();
+          const encryptedData = this._encryptData({request, requestId, timestamp});
+          encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_REQUEST, encryptedData.result);
+        },
+        onResponse: ({ response, request, requestId }: T.NetworkInterceptorOnResponsePayload) => {
+          const timestamp = moment().valueOf();
+          const encryptedData = this._encryptData({response, request, requestId, timestamp});
+          encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_RESPONSE, encryptedData.result);
+        }
       },
-      onResponse: ({ response, request, requestId }: T.NetworkInterceptorOnResponsePayload) => {
-        const timestamp = moment().valueOf();
-        const encryptedData = this._encryptData({response, request, requestId, timestamp});
-        encryptedData.ok && this._socket?.emit(SOCKET_EVENTS_EMIT.SAVE_INTERCEPTED_RESPONSE, encryptedData.result);
-      }
-    });
+      config.interceptorOptions
+    );
   };
 
   private async _setupRN(config: T.PackageConfig) {

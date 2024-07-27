@@ -24,6 +24,15 @@ declare type GetStackTraceFunctionOptions = {
 
 declare type GetStackTraceFunction = (errorOrStack: Error | string | undefined, options?: GetStackTraceFunctionOptions) => Promise<StackTraceData>;
 
+declare type NetworkInterceptorOptions = {
+  // List of hosts to ignore, e.g. `services.test.com`
+  ignoredHosts?: string[];
+  // List of urls to ignore, e.g. `https://services.test.com/test`
+  ignoredUrls?: string[];
+  // List of url patterns to ignore, e.g. `/^GET https://test.com\/pages\/.*$/`; Url to match with is in the format: `${method} ${url}`, e.g. `GET https://test.com/pages/123`
+  ignoredPatterns?: RegExp[];
+};
+
 declare type SpecialInstructionId = "condition" | "delay" | "forwardData";
 
 declare type RemoteEvent = {
@@ -67,6 +76,7 @@ declare module '@appklaar/codebud' {
   export type PackageConfig = {
     mode?: PackageMode;
     Interceptor?: any;
+    interceptorOptions?: NetworkInterceptorOptions;
     EncryptionPlugin?: any;
     ReactNativePlugin?: any;
     projectInfo?: ProjectInfo;

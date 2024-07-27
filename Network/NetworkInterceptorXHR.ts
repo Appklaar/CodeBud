@@ -1,7 +1,6 @@
 import { setUpXHRInterceptor } from './../react/network/setupXHRInterceptor';
 import { NetworkInterceptorApi } from './AbstractInterceptor';
-import { NetworkInterceptorCallbacksTable } from '../types/types';
-import { shouldProceedIntercepted } from './helpers';
+import { NetworkInterceptorCallbacksTable, NetworkInterceptorOptions } from '../types/types';
 import { codebudConsoleLog } from '../helpers/helperFunctions';
 import { SPECIAL_HTTP_STATUS_CODES } from '../constants/httpStatusCodes';
 
@@ -39,8 +38,8 @@ class NetworkInterceptorXHR extends NetworkInterceptorApi {
     return formattedResponse;
   };
 
-  constructor(callbacksTable: NetworkInterceptorCallbacksTable) {
-    super();
+  constructor(callbacksTable: NetworkInterceptorCallbacksTable, options?: NetworkInterceptorOptions) {
+    super(options);
 
     this._interceptor = setUpXHRInterceptor({
       DEBUG: false,
@@ -48,7 +47,7 @@ class NetworkInterceptorXHR extends NetworkInterceptorApi {
     });
 
     this._interceptor.onXHRRequest(async (request: any) => {
-      // if (shouldProceedIntercepted(request.url)) {
+      // if (this.shouldProceedIntercepted(request.url,)) {
       //   try {
       //     const formattedRequest = await this.formatRequest(request);
       //     callbacksTable.onRequest({
@@ -62,7 +61,7 @@ class NetworkInterceptorXHR extends NetworkInterceptorApi {
     });
 
     this._interceptor.onXHRResponse(async (response: any) => {
-      if (shouldProceedIntercepted(response.url)) {
+      if (this.shouldProceedIntercepted(response.url, response.method)) {
         try {
           const formattedRequest = await this.formatRequest(response);
           const formattedResponse = await this.formatResponse(response);
@@ -80,6 +79,7 @@ class NetworkInterceptorXHR extends NetworkInterceptorApi {
   };
 
   public dispose() {
+    this.disposeIgnored();
     this._interceptor?.dispose();
     this._interceptor = null;
   };

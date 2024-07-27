@@ -1,7 +1,6 @@
 import { XMLHttpRequestInterceptor } from '@mswjs/interceptors/XMLHttpRequest';
 import { NetworkInterceptorApi } from './AbstractInterceptor';
-import { NetworkInterceptorCallbacksTable } from '../types/types';
-import { shouldProceedIntercepted } from './helpers';
+import { NetworkInterceptorCallbacksTable, NetworkInterceptorOptions } from '../types/types';
 import { codebudConsoleLog } from '../helpers/helperFunctions';
 
 class NetworkInterceptorXMLHttp extends NetworkInterceptorApi {
@@ -55,7 +54,7 @@ class NetworkInterceptorXMLHttp extends NetworkInterceptorApi {
     return formattedResponse;
   };
 
-  constructor(callbacksTable: NetworkInterceptorCallbacksTable) {
+  constructor(callbacksTable: NetworkInterceptorCallbacksTable, options?: NetworkInterceptorOptions) {
     super();
     
     this._interceptor = new XMLHttpRequestInterceptor();
@@ -63,7 +62,7 @@ class NetworkInterceptorXMLHttp extends NetworkInterceptorApi {
     this._interceptor.apply();
 
     this._interceptor.on('request', async (request, requestId) => {
-      if (shouldProceedIntercepted(request.url)) {
+      if (this.shouldProceedIntercepted(request.url, request.method)) {
         try {
           const formattedRequest = await this.formatRequest(request);
           callbacksTable.onRequest({
@@ -77,7 +76,7 @@ class NetworkInterceptorXMLHttp extends NetworkInterceptorApi {
     });
     
     this._interceptor.on('response', async (response, request, requestId) => {
-      if (shouldProceedIntercepted(request.url)) {
+      if (this.shouldProceedIntercepted(request.url, request.method)) {
         try {
           const formattedResponse = await this.formatResponse(response);
           const formattedRequest = await this.formatRequest(request);
@@ -94,6 +93,7 @@ class NetworkInterceptorXMLHttp extends NetworkInterceptorApi {
   };
 
   public dispose() {
+    this.disposeIgnored();
     this._interceptor?.dispose();
   };
 };

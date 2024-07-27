@@ -1,9 +1,8 @@
 import { NetworkInterceptorApi } from './AbstractInterceptor';
 import { startNetworkLogging, stopNetworkLogging, clearRequests } from "./../rn";
-import { NetworkInterceptorCallbacksTable } from '../types/types';
+import { NetworkInterceptorCallbacksTable, NetworkInterceptorOptions } from '../types/types';
 import { CONFIG } from './../config';
 import { codebudConsoleLog } from '../helpers/helperFunctions';
-import { shouldProceedIntercepted } from './helpers';
 
 class NetworkInterceptorRN extends NetworkInterceptorApi {
   protected async formatRequest(data: any) {
@@ -44,8 +43,8 @@ class NetworkInterceptorRN extends NetworkInterceptorApi {
     return formattedResponse;
   }
 
-  constructor(callbacksTable: NetworkInterceptorCallbacksTable) {
-    super();
+  constructor(callbacksTable: NetworkInterceptorCallbacksTable, options?: NetworkInterceptorOptions) {
+    super(options);
 
     startNetworkLogging({ 
       forceEnable: true,
@@ -54,7 +53,7 @@ class NetworkInterceptorRN extends NetworkInterceptorApi {
       ignoredHosts: CONFIG.NETWORK_INTERCEPTOR.FILTER_INNER_REQUESTS ? [CONFIG.DOMAIN] : undefined,
       onRequest: async (data: any) => {
         try {
-          if (shouldProceedIntercepted(data.url)) {
+          if (this.shouldProceedIntercepted(data.url, data.method)) {
             const formattedRequest = await this.formatRequest(data);
             const formattedResponse = await this.formatResponse(data);
             callbacksTable.onResponse({
@@ -71,6 +70,7 @@ class NetworkInterceptorRN extends NetworkInterceptorApi {
   };
 
   public dispose() {
+    this.disposeIgnored();
     clearRequests();
     stopNetworkLogging();
   }
