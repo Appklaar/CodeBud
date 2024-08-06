@@ -1,6 +1,4 @@
-import { Singleton } from "./../helpers/classes";
-
-class IdService extends Singleton {
+class IdService {
   private _currentInterceptedReduxActionId = 0;
   private _currentInterceptedStorageActionId = 0;
   private _currentCapturedEventId = 0;

@@ -1,1 +1,0 @@
-export { Singleton } from "./Singleton";
