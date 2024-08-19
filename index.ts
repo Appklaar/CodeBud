@@ -105,9 +105,9 @@ export const CodeBud: ModuleInterface = {
     }
   },
 
-  createReduxActionMonitorMiddleware(batchingTimeMs = 200) {
+  createReduxActionMonitorMiddleware(batchingTimeMs = 200, ignoredPatterns: RegExp[] = []) {
     return () => (next: any) => (action: any) => {
-      if (connector.isInit)
+      if (connector.isInit && !ignoredPatterns.some((pattern) => pattern.test(action.type)))
         connector.codebudHandleDispatchedReduxAction(action, batchingTimeMs);
 
       return next(action);

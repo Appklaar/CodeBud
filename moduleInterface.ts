@@ -66,9 +66,10 @@ export interface AppKlaarSdk {
   /**
    * Function that creates Redux middleware for actions monitoring.
    * @param {number} [batchingTimeMs = 200] batching time of sending dispatched redux actions (in ms). Defaults to 200. This param only affects logging delay and does not slow down your redux flow.
+   * @param {RegExp[]} [ignoredPatterns = []] array of ignored action type patterns.
    * @returns {Function} Middleware
    */
-  createReduxActionMonitorMiddleware: (batchingTimeMs?: number) => any;
+  createReduxActionMonitorMiddleware: (batchingTimeMs?: number, ignoredPatterns?: RegExp[]) => any;
   /**
    * Function that creates Zustand Store Change Handler, that you can use to subscribe to Store Changes.
    * @param {SelectFn} selectFn select function that returns part of the store.
