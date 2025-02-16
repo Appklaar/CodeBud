@@ -369,6 +369,10 @@ declare module '@appklaar/codebud/Network/NetworkInterceptorXHR' {
   export class NetworkInterceptorXHR {}
 }
 
+declare module '@appklaar/codebud/Network/NetworkInterceptorGlobalFetch' {
+  export class NetworkInterceptorGlobalFetch {}
+}
+
 declare module '@appklaar/codebud/rn' {
   export type InitModalProps = {
     animationType?: "fade" | "none" | "slide";

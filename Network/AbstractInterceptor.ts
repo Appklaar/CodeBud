@@ -2,7 +2,7 @@ import { CONFIG } from "../config";
 import { codebudConsoleWarn } from "../helpers/helperFunctions";
 import { extractHost } from "../helpers/network";
 import { InterceptedRequest, InterceptedResponse, NetworkInterceptorOptions } from "../types/types";
-import { DEFAULT_IGNORED_PATTERNS } from "./helpers";
+import { DEFAULT_IGNORED_PATTERNS } from "./constants";
 
 export abstract class NetworkInterceptorApi {
   protected ignoredHosts: Set<string> | undefined;

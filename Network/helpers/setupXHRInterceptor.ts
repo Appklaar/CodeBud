@@ -1,6 +1,10 @@
-import { codebudConsoleWarn, codebudConsoleLog } from "../../helpers/helperFunctions";
+import { codebudConsoleWarn, codebudConsoleLog } from "./../../helpers/helperFunctions";
 
-type RequestData = { api?: any, method?: string, url?: string, body?: any };
+type Callback = (data: any) => void;
+
+type GetRequestIdFn = () => number;
+
+type RequestData = { requestId: number, api?: any, method?: string, url?: string, body?: any, requestHeaders?: any };
 
 type ResponseData = RequestData & {status?: number, response?: any, responseHeaders?: any};
 
@@ -13,28 +17,31 @@ type OnRequestSeen = (request: RequestData) => void;
 type OnResponseSeen = (response: ResponseData) => void;
 
 type HookXMLHttpRequestParams = {
+  getRequestId: GetRequestIdFn;
   DEBUG: boolean;
-  window: any;
+  windowOrGlobal: any;
   onInterceptionError: OnInterceptionError;
   onRequestSeen: OnRequestSeen;
   onResponseSeen: OnResponseSeen
 };
 
 function hookXMLHttpRequest({
+  getRequestId,
   DEBUG,
-  window,
+  windowOrGlobal,
   onInterceptionError,
   onRequestSeen,
   onResponseSeen,
 }: HookXMLHttpRequestParams) {
-  const swizzXMLHttpRequest = window.XMLHttpRequest;
+  const swizzXMLHttpRequest = windowOrGlobal.XMLHttpRequest;
 
   // note: normally takes no params, except for a Mozilla non-standard extension
   // http://devdocs.io/dom/xmlhttprequest/xmlhttprequest
-  window.XMLHttpRequest = function XMLHttpRequest(mozParam: any) {
+  windowOrGlobal.XMLHttpRequest = function XMLHttpRequest(mozParam: any) {
     const request = new swizzXMLHttpRequest(mozParam);
 
     try {
+      const requestId = getRequestId();
       let method: any = null;
       let url: any = null;
       let body: any = null;
@@ -68,6 +75,7 @@ function hookXMLHttpRequest({
           }
 
           onRequestSeen({
+            requestId,
             api: 'XMLHttpRequest',
             method,
             url,
@@ -127,6 +135,7 @@ function hookXMLHttpRequest({
           }
 
           onResponseSeen({
+            requestId,
             api: 'XMLHttpRequest',
             method,
             url,
@@ -159,36 +168,41 @@ function hookXMLHttpRequest({
 }
 
 type hookFetchParams = {
+  getRequestId: GetRequestIdFn;
   DEBUG: boolean;
-  window: any;
+  windowOrGlobal: any;
   onInterceptionError: OnInterceptionError;
   onRequestSeen: OnRequestSeen;
-  onResponseSeen: OnRequestSeen;
+  onResponseSeen: OnResponseSeen;
 };
 
 function hookFetch({
+  getRequestId,
   DEBUG,
-  window,
+  windowOrGlobal,
   onInterceptionError,
   onRequestSeen,
   onResponseSeen,
 }: hookFetchParams) {
-  const swizzFetch = window.fetch;
+  const swizzFetch = windowOrGlobal.fetch;
 
   // https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/fetch
-  window.fetch = function fetch(input: any, init: any) {
-    const promisedResponse = swizzFetch.apply(window, arguments);
+  windowOrGlobal.fetch = function fetch(input: any, init: any) {
+    const promisedResponse = swizzFetch.apply(windowOrGlobal, arguments);
 
     try {
+      const requestId = getRequestId();
       const method = ((init ? init.method : null) || 'GET').toUpperCase();
       const url = (typeof input === 'string' ? input : '').toLowerCase();
       const body = init ? init.body : null;
 
       onRequestSeen({
+        requestId,
         api: 'fetch',
         method,
         url,
         body,
+        requestHeaders: init?.headers
       });
 
       promisedResponse
@@ -199,13 +213,21 @@ function hookFetch({
             .catch(() => response.text())
             .catch(() => null)
             .then((res: any) => {
+              let responseHeaders;
+              let responseHeadersEntries = response?.headers?.entries?.();
+              if (responseHeadersEntries)
+                responseHeaders = Object.fromEntries(responseHeadersEntries);
+              
               onResponseSeen({
+                requestId,
                 api: 'fetch',
                 method,
                 url,
                 body,
                 // @ts-ignore
                 response: res,
+                requestHeaders: init?.headers,
+                responseHeaders
               });
             }),
         )
@@ -221,16 +243,26 @@ function hookFetch({
 }
 
 type setUpXHRInterceptorParams = {
+  getRequestId: GetRequestIdFn;
   DEBUG?: boolean;
-  window?: any;
+  windowOrGlobal?: any;
+  enableSwizzXMLHttpRequest?: boolean;
+  enableSwizzFetch?: boolean;
+};
+
+type setUpXHRInterceptorResult = {
+  onRequest: (callback: Callback) => void;
+  onResponse: (callback: Callback) => void;
+  dispose: () => void;
 };
 
 export function setUpXHRInterceptor({
+  getRequestId,
   DEBUG = true,
-  window
-}: setUpXHRInterceptorParams = {}) {
-  // //////////////////////////////////
-
+  windowOrGlobal,
+  enableSwizzXMLHttpRequest = true,
+  enableSwizzFetch = true,
+}: setUpXHRInterceptorParams): setUpXHRInterceptorResult {
   function onInterceptionError(debugId: string, e: any) {
     if (DEBUG)
       codebudConsoleWarn(`error while ${debugId}`, e);
@@ -238,64 +270,73 @@ export function setUpXHRInterceptor({
 
   const requestWaiters: RequestWaiter[] = [];
 
-  function onXHRRequest(callback: RequestWaiter) {
+  function onRequest(callback: RequestWaiter) {
     requestWaiters.push(callback);
   }
 
   const responsesWaiters: ResponseWaiter[] = [];
   
-  function onXHRResponse(callback: ResponseWaiter) {
+  function onResponse(callback: ResponseWaiter) {
     responsesWaiters.push(callback);
   }
 
-  function onRequestSeen({ api, method, url, body }: RequestData = {}) {
-      try {
-        if (DEBUG) 
-          codebudConsoleLog(`onRequestSeen`, { api, method, url, body });
+  function onRequestSeen({ requestId, api, method, url, body, requestHeaders }: RequestData) {
+    try {
+      if (DEBUG) 
+        codebudConsoleLog(`onRequestSeen`, { requestId, api, method, url, body, requestHeaders });
 
-        requestWaiters.forEach(callback => callback({ method, url, body }));
-      } catch (e) {
-        onInterceptionError('onRequestSeen', e);
-        /* swallow */
-      }
+      requestWaiters.forEach(callback => callback({ requestId, method, url, body, requestHeaders }));
+    } catch (e) {
+      onInterceptionError('onRequestSeen', e);
+      /* swallow */
+    }
   }
 
-  function onResponseSeen({ api, method, url, body, status, response, responseHeaders }: ResponseData = {}) {
+  function onResponseSeen({ requestId, api, method, url, body, status, response, requestHeaders, responseHeaders }: ResponseData) {
     try {
       if (DEBUG)
-        codebudConsoleLog(`onResponseSeen`, {api, method, url, body, status, response, responseHeaders});
+        codebudConsoleLog(`onResponseSeen`, {requestId, api, method, url, body, status, response, requestHeaders, responseHeaders});
 
-      responsesWaiters.forEach(callback => callback({ method, url, body, status, response, responseHeaders }));
+      responsesWaiters.forEach(callback => callback({ requestId, method, url, body, status, response, requestHeaders, responseHeaders }));
     } catch (e) {
       onInterceptionError('onResponseSeen', e);
       /* swallow */
     }
   }
 
-  const swizzXMLHttpRequest = hookXMLHttpRequest({
-    window,
-    DEBUG,
-    onInterceptionError,
-    onRequestSeen,
-    onResponseSeen
-  });
+  let swizzXMLHttpRequest;
+  if (enableSwizzXMLHttpRequest)
+    swizzXMLHttpRequest = hookXMLHttpRequest({
+      getRequestId,
+      windowOrGlobal,
+      DEBUG,
+      onInterceptionError,
+      onRequestSeen,
+      onResponseSeen
+    });
 
-  const swizzFetch = hookFetch({
-    window,
-    DEBUG,
-    onInterceptionError,
-    onRequestSeen,
-    onResponseSeen
-  });
+  let swizzFetch;
+  if (enableSwizzFetch)
+    swizzFetch = hookFetch({
+      getRequestId,
+      windowOrGlobal,
+      DEBUG,
+      onInterceptionError,
+      onRequestSeen,
+      onResponseSeen
+    });
 
   const dispose = () => {
-    window.XMLHttpRequest = swizzXMLHttpRequest;
-    window.fetch = swizzFetch;
+    if (enableSwizzXMLHttpRequest)
+      windowOrGlobal.XMLHttpRequest = swizzXMLHttpRequest;
+
+    if (enableSwizzFetch)
+      windowOrGlobal.fetch = swizzFetch;
   }
 
   return {
-    onXHRRequest,
-    onXHRResponse,
+    onRequest,
+    onResponse,
     dispose
   };
 }

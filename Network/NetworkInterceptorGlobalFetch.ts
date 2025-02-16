@@ -4,7 +4,7 @@ import { NetworkInterceptorCallbacksTable, NetworkInterceptorOptions } from '../
 import { codebudConsoleLog } from '../helpers/helperFunctions';
 import { SPECIAL_HTTP_STATUS_CODES } from '../constants/httpStatusCodes';
 
-class NetworkInterceptorXHR extends NetworkInterceptorApi {
+class NetworkInterceptorGlobalFetch extends NetworkInterceptorApi {
   private _interceptor: ReturnType<typeof setUpXHRInterceptor> | null = null;
   private _currentId: number = 0;
 
@@ -13,7 +13,7 @@ class NetworkInterceptorXHR extends NetworkInterceptorApi {
       method: request.method,
       body: request.body,
       url: request.url,
-      // requestHeaders: Object.fromEntries(request.headers)
+      requestHeaders: request.requestHeaders
     };
 
     return formattedRequest;
@@ -34,23 +34,23 @@ class NetworkInterceptorXHR extends NetworkInterceptorApi {
     super(options);
 
     this._interceptor = setUpXHRInterceptor({
-      getRequestId: () => this._currentId++, // TODO: actually use intercepted request id
+      getRequestId: () => this._currentId++,
       DEBUG: false,
-      windowOrGlobal: window
+      windowOrGlobal: global
     });
 
     this._interceptor.onRequest(async (request: any) => {
-      // if (this.shouldProceedIntercepted(request.url,)) {
-      //   try {
-      //     const formattedRequest = await this.formatRequest(request);
-      //     callbacksTable.onRequest({
-      //       request: formattedRequest, 
-      //       requestId: "10"
-      //     });
-      //   } catch (e) {
-      //     codebudConsoleLog(e);
-      //   }
-      // }
+      if (this.shouldProceedIntercepted(request.url, request.method)) {
+        try {
+          const formattedRequest = await this.formatRequest(request);
+          callbacksTable.onRequest({
+            request: formattedRequest, 
+            requestId: request.requestId
+          });
+        } catch (e) {
+          codebudConsoleLog(e);
+        }
+      }
     });
 
     this._interceptor.onResponse(async (response: any) => {
@@ -61,9 +61,8 @@ class NetworkInterceptorXHR extends NetworkInterceptorApi {
           callbacksTable.onResponse({
             response: formattedResponse,
             request: formattedRequest,
-            requestId: this._currentId.toString()
+            requestId: response.requestId
           });
-          this._currentId++; // TODO: remove
         } catch (e) {
           codebudConsoleLog(e);
         }
@@ -78,4 +77,4 @@ class NetworkInterceptorXHR extends NetworkInterceptorApi {
   };
 };
 
-export { NetworkInterceptorXHR };
+export { NetworkInterceptorGlobalFetch };
