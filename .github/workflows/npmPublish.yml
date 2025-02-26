@@ -33,12 +33,12 @@ jobs:
       - name: Update build GitHub README.md file
         run: cp ./README.md ./build
       - name: Upload build artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: build
           name: codebud-build
       - name: Download build artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: codebud-build
       - name: Go to build folder & publish new version to NPM
