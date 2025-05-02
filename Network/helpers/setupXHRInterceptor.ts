@@ -193,7 +193,13 @@ function hookFetch({
     try {
       const requestId = getRequestId();
       const method = ((init ? init.method : null) || 'GET').toUpperCase();
-      const url = (typeof input === 'string' ? input : '').toLowerCase();
+      let url = '';
+      if (typeof input === 'string') {
+        url = input;
+      } else if (input instanceof Request) {
+        url = input.url;
+      }
+      url = url.toLowerCase();
       const body = init ? init.body : null;
 
       onRequestSeen({
