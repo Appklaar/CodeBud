@@ -1,7 +1,7 @@
 import { NetworkInterceptorOptions } from "../types/types";
 import { NetworkRequestInfo } from "./NetworkRequestInfo";
 
-export type { Headers, RequestMethod } from "./NetworkRequestInfo";
+export type { Headers } from "./NetworkRequestInfo";
 
 export type StartNetworkLoggingOptions = NetworkInterceptorOptions & {
   /**

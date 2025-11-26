@@ -3,13 +3,11 @@ import fromEntries from './utils/fromEntries';
 
 export type Headers = { [header: string]: string };
 
-export type RequestMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-
 export class NetworkRequestInfo {
   id = '';
   type = '';
   url = '';
-  method: RequestMethod;
+  method: string;
   status: number = -1;
   dataSent = '';
   responseContentType = '';
@@ -28,7 +26,7 @@ export class NetworkRequestInfo {
   endTime: number = 0;
   gqlOperation?: string;
 
-  constructor(id: string, type: string, method: RequestMethod, url: string) {
+  constructor(id: string, type: string, method: string, url: string) {
     this.id = id;
     this.type = type;
     this.method = method;

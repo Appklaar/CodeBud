@@ -1,13 +1,13 @@
-import XHRInterceptor from 'react-native/Libraries/Network/XHRInterceptor';
+import { XHRInterceptor } from './xhrInterceptor';
 import { NetworkRequestInfo } from './NetworkRequestInfo';
-import { Headers, RequestMethod, StartNetworkLoggingOptions } from './types';
+import { Headers, StartNetworkLoggingOptions } from './types';
 import { extractHost } from './../helpers/network';
 import { warn } from './utils/logger';
 
 let nextXHRId = 0;
 
-type XHR = {
-  _index: number;
+interface XHR extends XMLHttpRequest {
+  _index?: number;
   responseHeaders?: Headers;
 };
 
@@ -43,7 +43,7 @@ export default class Logger {
     networkInfo.update(update);
   };
 
-  private openCallback = (method: RequestMethod, url: string, xhr: XHR) => {
+  private openCallback = (method: string, url: string, xhr: XHR) => {
     xhr._index = nextXHRId++;
     const xhrIndex = this.requests.length;
     this.xhrIdMap[xhr._index] = xhrIndex;
@@ -92,12 +92,12 @@ export default class Logger {
   };
 
   private headerReceivedCallback = (
-    responseContentType: string,
-    responseSize: number,
-    responseHeaders: Headers,
+    responseContentType: string | undefined,
+    responseSize: number | undefined,
+    allHeaders: string,
     xhr: XHR
   ) => {
-    this.updateRequest(xhr._index, {
+    this.updateRequest(xhr._index!, {
       responseContentType,
       responseSize,
       responseHeaders: xhr.responseHeaders,
@@ -105,7 +105,7 @@ export default class Logger {
   };
 
   private sendCallback = (data: string, xhr: XHR) => {
-    this.updateRequest(xhr._index, {
+    this.updateRequest(xhr._index!, {
       startTime: Date.now(),
       dataSent: data,
     });
@@ -120,7 +120,7 @@ export default class Logger {
     responseType: string,
     xhr: XHR
   ) => {
-    this.updateRequest(xhr._index, {
+    this.updateRequest(xhr._index!, {
       endTime: Date.now(),
       status,
       timeout,
